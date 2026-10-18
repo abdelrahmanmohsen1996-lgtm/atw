@@ -5,14 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Around the World</title>
 <meta name="theme-color" content="#FFFFFF">
-<link rel="icon" href="assets/atw-logo.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Around the World">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" media="print" onload="this.media='all'">
 <script>
 /* on-screen error report + small polyfill for older phones */
 if(!Array.prototype.at){Array.prototype.at=function(i){i=Math.trunc(i)||0;if(i<0)i+=this.length;return this[i]}}
 window.ATW_ERRORS=[];
 function atwShowError(msg){window.ATW_ERRORS.push(msg);var b=document.getElementById('atw-diag');if(!b){b=document.createElement('div');b.id='atw-diag';b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:99;background:#B42340;color:#fff;font:13px/1.4 monospace;padding:10px 12px;border-radius:10px;white-space:pre-wrap;max-height:40vh;overflow:auto';(document.body||document.documentElement).appendChild(b)}b.textContent='Problem found (send a screenshot of this):\n'+window.ATW_ERRORS.join('\n')}
-window.addEventListener('error',function(e){if(e.target&&e.target!==window)return;if(!e.message)return;atwShowError((e.message||'Error')+(e.filename?' @ '+e.filename.split('/').pop()+':'+e.lineno:''))},true);
+window.addEventListener('error',function(e){if(e.target&&e.target!==window)return;if(!e.message||/^Script error\.?$/i.test(e.message))return;if(e.filename&&e.filename.indexOf(location.origin)!==0)return;atwShowError((e.message||'Error')+(e.filename?' @ '+e.filename.split('/').pop()+':'+e.lineno:''))},true);
 window.addEventListener('unhandledrejection',function(e){atwShowError('Promise: '+(e.reason&&(e.reason.code||e.reason.message)||e.reason))});
 </script>
 <script src="lib/qrcode.js?v=5" defer></script>
@@ -165,6 +171,9 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 .boardland{display:block;width:min(560px,100%);margin:6px auto 0;height:auto;opacity:.95}
 .lb.first{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 7%,var(--card)),var(--card))}
 .lb .medal{font-size:26px;line-height:1}
+.install{display:flex;gap:12px;align-items:center;background:var(--card);border:1px dashed var(--navy);border-radius:14px;padding:12px 14px}
+.install img{width:44px;height:44px;border-radius:10px;flex:none}
+.install p{margin:0;font-size:14px;color:var(--muted)}.install b{color:var(--ink)}
 .empty{text-align:center;padding:36px 18px;display:grid;gap:8px;justify-items:center}
 .empty .big{font-family:var(--display);font-size:26px;font-weight:400;text-transform:uppercase}
 .qrbox{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -312,6 +321,17 @@ function passportHTML(t){const r=route(t),p=prog(t.id);
     if(i===p.step)return `<div class="slot next"><div><div class="q">?</div><div class="label">Next stop</div></div></div>`;
     return `<div class="slot"><div class="q">?</div></div>`}).join('')}</div></section>`}
 
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;render(true)});
+window.addEventListener('appinstalled',()=>{installEvt=null;render(true)});
+function installHTML(){
+  const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(standalone)return'';
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(installEvt)return `<div class="install"><img src="assets/icon-192.png" alt=""><p style="flex:1"><b>Install the app</b><br>Add Around the World to this phone's home screen.</p><button class="btn primary small" data-act="install">Install</button></div>`;
+  if(ios)return `<div class="install"><img src="assets/icon-192.png" alt=""><p><b>Add to Home Screen</b><br>Tap the Share button <span aria-hidden="true">⬆︎</span> in Safari, then <b>Add to Home Screen</b>.</p></div>`;
+  return `<div class="install"><img src="assets/icon-192.png" alt=""><p><b>Add to Home Screen</b><br>Open the browser menu ⋮ and choose <b>Add to Home screen</b> or <b>Install app</b>.</p></div>`;
+}
 function vPlay(){
   if(!S.ready)return `<div class="panel empty"><div class="big">Loading the terminal</div></div>`;
   const team=S.teams.find(t=>t.id===S.myTeam);
@@ -319,6 +339,7 @@ function vPlay(){
     if(!S.teams.length)return `<div class="hero"><img class="land" src="assets/landmarks.png" alt="" width="520" height="338"></div><div class="panel empty"><div class="big">No teams yet</div><p class="muted">The organiser adds teams and countries in the Control room. This screen fills in as soon as they do.</p></div>`;
     const sel=S.teams.find(t=>t.id===S.pick);
     return `<div class="hero"><img class="land" src="assets/landmarks.png" alt="" width="520" height="338"><p>Solve each shipment flyer, travel to the country, play its game and collect every stamp in your passport.</p></div>
+    ${installHTML()}
     <section class="panel"><div><span class="label">Check-in</span><h2>Choose your team</h2></div>
       <div class="teampick">${S.teams.map(t=>`<button data-act="pick" data-id="${t.id}" aria-pressed="${S.pick===t.id}"><span class="dot" style="background:${esc(t.color)}"></span>${esc(t.name)}</button>`).join('')}</div>
       ${sel?`<form data-form="join" class="row" style="align-items:flex-end">
@@ -490,6 +511,7 @@ document.addEventListener('click',async e=>{
   if(a==='ovreset'){OV[id]={x:24,y:24,op:.6};render(true);return}
   if(a==='copy'){try{await navigator.clipboard.writeText(joinURL());flash('good','Link copied.')}catch(err){flash('bad','Copy failed. Select the link and copy it.')}render(true);return}
   if(a==='logout'){await api.signOut();return}
+  if(a==='install'){if(installEvt){installEvt.prompt();try{await installEvt.userChoice}catch(_){}installEvt=null;render(true)}return}
   if(a==='sample'){await loadSample();flash('good','Example countries and teams loaded.');render();return}
   if(a==='starter'){S.busy=true;flash('good','Loading starter pack…');render(true);try{await loadStarter();flash('good','Starter pack loaded: 8 countries, 8 teams, tracks set.')}catch(err){S.err='Starter pack could not be loaded: '+(err&&err.message||err)}S.busy=false;render(true);return}
   if(a==='autotrack'){const {routes,bad}=scheduleTracks();for(let k=0;k<S.teams.length;k++){await w(`teams/${S.teams[k].id}/route`,routes[k])}
@@ -625,6 +647,7 @@ async function boot(){
   subscribe();setTimeout(()=>{S.ready=true;render(true)},4000);
 }
 boot();
+if('serviceWorker' in navigator&&location.protocol==='https:'){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
 </script>
 </body>
 </html>
