@@ -17,14 +17,22 @@ Example stamp codes: Japan 1101, Brazil 2202, Italy 3303, India 4404, Mexico 550
 
 Spark (free) plan is enough. You don't need Firebase Storage; photos are saved inside the database.
 
-## 2. Put it online (free)
-1. Go to https://app.netlify.com/drop (sign up free with Google).
-2. Drag the whole `around-the-world` folder onto the page.
-3. You get a link like `https://xxxx.netlify.app`. In Site settings you can rename it, e.g. `logic-atw.netlify.app`.
-To update later: drag the folder again on the site's **Deploys** page.
+## 2. Put it online (free, on Firebase Hosting)
+Netlify addresses don't open on some Egyptian networks, so the game is hosted on Firebase, in the same project.
+1. Install Node.js once: https://nodejs.org → download **LTS** → open the .pkg and click through.
+2. Open **Terminal** (Cmd+Space → type Terminal).
+3. Type `cd ` (with a space), drag the unzipped `around-the-world` folder into the Terminal window, press Enter.
+4. Run: `npx firebase-tools login` → press `y` if asked → sign in with the same Google account in the browser that opens.
+5. Run: `npx firebase-tools deploy --only hosting`
+6. Your game is live at **https://logic-around-the-world.web.app**
+To update later: repeat steps 2, 3 and 5.
 
 ## 3. Run an event
-1. Open the link → **Control room** → sign in with the user from step 1.5.
+**Fastest start:** Control room → Game settings → **Load starter pack**. It sets up 8 countries (clue, photos, answer, hint, station game, stamp code), 8 teams with PINs, and clash-free tracks. Then edit anything you like.
+
+**Team tracks (tracking sheet):** Control room → *Team tracks*. Each row is one team's order of countries; the team's flyers follow that order. Red cells = two teams at the same station at the same stop. **Auto-arrange** fixes clashes, **Download sheet (CSV)** gives you the sheet for Excel/printing.
+
+1. Open https://logic-around-the-world.web.app → **Control room** → sign in with the user from step 1.5.
 2. Add countries: clue text and/or up to 4 photos, accepted answers, station challenge, stamp code. Use ↑ ↓ to set the order.
    - Your current deck is exported in `clue-photos/` (one JPG per slide). Upload them to the matching countries.
    - **Accepted answers** can be the code word the puzzle reveals (e.g. slide 1–2 → `sushi`, slide 5 → `saudi arabia`). Leave it empty to accept the country name.
