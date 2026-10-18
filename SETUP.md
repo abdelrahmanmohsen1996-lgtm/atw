@@ -30,7 +30,9 @@ To update later: repeat steps 2, 3 and 5.
 ## 3. Run an event
 **Fastest start:** Control room → Game settings → **Load starter pack**. It sets up 8 countries (clue, photos, answer, hint, station game, stamp code), 8 teams with PINs, and clash-free tracks. Then edit anything you like.
 
-**Team tracks (tracking sheet):** Control room → *Team tracks*. Each row is one team's order of countries; the team's flyers follow that order. Red cells = two teams at the same station at the same stop. **Auto-arrange** fixes clashes, **Download sheet (CSV)** gives you the sheet for Excel/printing.
+**Game sets:** edit a country → *Game sets* = how many teams can play that game at the same time. The Team tracks panel tells you if you have enough: each country needs at least (teams ÷ countries, rounded up) sets, e.g. 16 teams on 8 countries = 2 sets each.
+
+**Team tracks (tracking sheet):** Control room → *Team tracks*. Each row is one team's order of countries; the team's flyers follow that order. Red cells = more teams at a country at the same stop than it has game sets. **Auto-arrange** fixes clashes, **Download sheet (CSV)** gives you the sheet for Excel/printing.
 
 1. Open https://logic-around-the-world.web.app → **Control room** → sign in with the user from step 1.5.
 2. Add countries: clue text and/or up to 4 photos, accepted answers, station challenge, stamp code. Use ↑ ↓ to set the order.
