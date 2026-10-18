@@ -1,0 +1,10 @@
+{
+  "rules": {
+    ".read": true,
+    "config":    { ".write": "auth != null" },
+    "countries": { ".write": "auth != null" },
+    "images":    { ".write": "auth != null" },
+    "teams":     { ".write": "auth != null" },
+    "progress":  { ".write": true }
+  }
+}
