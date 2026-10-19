@@ -171,9 +171,43 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 .boardland{display:block;width:min(560px,100%);margin:6px auto 0;height:auto;opacity:.95}
 .lb.first{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 7%,var(--card)),var(--card))}
 .lb .medal{font-size:26px;line-height:1}
-.install{display:flex;gap:12px;align-items:center;background:var(--card);border:1px dashed var(--navy);border-radius:14px;padding:12px 14px}
+.install{display:flex;gap:12px;align-items:center;background:var(--card);border:1.5px solid var(--navy);border-radius:14px;padding:12px 14px;width:100%;text-align:left;cursor:pointer;box-shadow:0 6px 18px rgba(8,82,113,.10);font:inherit;color:inherit}
+.install:active{transform:scale(.99)}
+.install .ins-t{flex:1;font-size:14px;color:var(--muted);line-height:1.35}.install .ins-t b{color:var(--ink)}
+.guide{position:fixed;inset:0;z-index:60;background:rgba(5,20,30,.62);display:grid;place-items:center;padding:16px;padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+.guide-card{background:var(--card);border-radius:18px;padding:20px;max-width:380px;width:100%;display:grid;gap:12px;justify-items:center;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.guide-card .guide-ic{width:64px;height:64px;border-radius:14px}
+.guide-card ol{list-style:none;margin:0;padding:0;display:grid;gap:10px;text-align:left;width:100%}
+.guide-card li{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.guide-card .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+.kbd{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:0 6px;background:var(--soft);font-weight:700}
+.guide-arrow{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:44px;color:#fff;animation:bob 1s ease-in-out infinite;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+@keyframes bob{50%{transform:translate(-50%,8px)}}
+@media (prefers-reduced-motion:reduce){.guide-arrow{animation:none}}
 .install img{width:44px;height:44px;border-radius:10px;flex:none}
 .install p{margin:0;font-size:14px;color:var(--muted)}.install b{color:var(--ink)}
+.eqp{background:linear-gradient(160deg,#0A5C7E,#073F57);color:#fff;border:0;overflow:hidden;position:relative}
+.eqp::after{content:"";position:absolute;inset:0;background:url(assets/map.jpg) center/cover;opacity:.08;pointer-events:none}
+.eqp>*{position:relative;z-index:1}
+.eqp .label{color:#BFD9E6}.eqp h3{color:#fff}
+.eq{display:flex;align-items:center;justify-content:center;gap:clamp(4px,1.6vw,10px);flex-wrap:wrap;padding:6px 0}
+.eq-res{font-family:var(--display);font-size:clamp(30px,8vw,44px);line-height:1;color:#fff;letter-spacing:.02em}
+.eq-op{font-family:var(--display);font-size:clamp(20px,5vw,28px);color:#9CC9DC;line-height:1}
+.eq-row{display:flex;align-items:center;gap:clamp(3px,1.2vw,8px);justify-content:center}
+.eq-frac{display:grid;gap:8px;justify-items:center}
+.eq-bar{height:4px;width:100%;min-width:60px;border-radius:2px;background:linear-gradient(90deg,#F4E8C9,#fff,#F4E8C9);box-shadow:0 1px 0 rgba(0,0,0,.2)}
+.tile{--ts:clamp(38px,10.5vw,52px);width:var(--ts);height:var(--ts);border-radius:9px;display:grid;place-items:center;position:relative;font-family:var(--display);font-size:calc(var(--ts)*.58);line-height:1;
+  background:linear-gradient(145deg,#FFF9EC,#F1E3BF);color:#085271;border:2px solid #F7EED6;box-shadow:inset 0 -3px 0 rgba(120,90,30,.22),0 4px 10px rgba(0,0,0,.28)}
+.tile .tf{position:absolute;top:-7px;right:-7px;font-size:13px;line-height:1;background:#fff;border-radius:50%;padding:2px;box-shadow:0 1px 3px rgba(0,0,0,.3);font-family:var(--body)}
+.tile.empty-t{background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.45);box-shadow:none;color:rgba(255,255,255,.28)}
+.tile.flip{animation:tflip .8s cubic-bezier(.2,1.4,.4,1)}
+@keyframes tflip{0%{transform:rotateY(90deg) scale(1.3)}100%{transform:none}}
+.eq-done{background:#1EB44B;color:#fff;border-radius:999px;padding:3px 10px;font-weight:700;font-size:12px}
+.reveal{position:fixed;inset:0;z-index:70;background:rgba(4,30,44,.93);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px;cursor:pointer}
+.reveal-card{display:grid;justify-items:center;gap:14px;text-align:center;color:#fff}
+.reveal-card .tile{--ts:120px;font-size:76px;animation:tflip 1s cubic-bezier(.2,1.4,.4,1)}
+.reveal-card h3{font-family:var(--display);font-weight:400;font-size:30px;text-transform:uppercase;margin:0}
+@media (prefers-reduced-motion:reduce){.tile.flip,.reveal-card .tile{animation:none}}
 .empty{text-align:center;padding:36px 18px;display:grid;gap:8px;justify-items:center}
 .empty .big{font-family:var(--display);font-size:26px;font-weight:400;text-transform:uppercase}
 .qrbox{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -195,11 +229,13 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 </div></header>
 <main class="wrap" id="app"></main>
 <footer class="foot">Powered by <img src="assets/logic-logo.png" alt="Logic Events" width="73" height="26"></footer>
+<div class="guide" id="guide" hidden></div>
+<div class="reveal" id="reveal" hidden data-act="closereveal"></div>
 <div class="zoom" id="zoom" hidden><img id="zoomimg" alt="Clue photo, enlarged"></div>
 
 <script type="module">
 const FBV='10.12.2';
-const DEF={title:'Around the World',hintCost:20,wrongPenalty:5};
+const DEF={title:'Around the World',hintCost:20,wrongPenalty:5,eqResult:'TW',eqTop:'C × C × C',eqBottom:'L + V',eqAfter:'× U'};
 const COLORS=['#E8590C','#1C7ED6','#2B8A3E','#AE3EC9','#C92A2A','#0C8599','#E67700','#5F3DC4'];
 const S={countries:[],teams:[],progress:{},config:{...DEF},canEdit:false,mode:'connecting',ready:false,user:null,
   view:'play',myTeam:lsGet('atw-team'),pick:null,flash:null,editing:null,armed:null,justStamped:null,err:null,pendingImg:undefined,busy:false};
@@ -314,6 +350,30 @@ function drawQR(){const el=document.getElementById('qr');if(!el||typeof window.q
 
 function stampHTML(c,s,i,fresh){const rot=((i*37)%22)-11;
   return `<div class="stampmark${fresh?' stamp-in':''}" style="--rot:${rot}deg;--sc:${esc(c.color||'#B42340')}"><span class="flag">${esc(c.flag||'✈')}</span><span class="code">${esc(code3(c))}</span><span class="date">${esc(fmtTime(s.at))}</span><span class="pts">+${+s.points||0} PTS</span></div>`}
+/* ===== equation ===== */
+function eqTokens(str){const out=[];for(const ch of String(str||'').toUpperCase()){if(/[A-Z]/.test(ch))out.push({l:ch});else if(/[×X*·]/.test(ch))out.push({o:'×'});else if(ch==='+')out.push({o:'+'});else if(ch==='-'||ch==='−')out.push({o:'−'});else if(ch==='÷'||ch==='/')out.push({o:'÷'});else if(ch==='('||ch===')')out.push({o:ch})}
+  // note: x / X / * are read as the multiply sign
+  return out}
+function eqParts(){const c=S.config;return{res:c.eqResult||'',top:eqTokens(c.eqTop),bot:eqTokens(c.eqBottom),after:eqTokens(c.eqAfter)}}
+function eqLetters(){const e=eqParts();return [...e.top,...e.bot,...e.after].filter(t=>t.l).map(t=>t.l)}
+function teamLetters(t){const p=prog(t.id),byId=Object.fromEntries(S.countries.map(c=>[c.id,c]));
+  return p.stamps.map(s=>({l:(s.letter||((byId[s.countryId]||{}).letter)||'').toUpperCase(),c:byId[s.countryId]})).filter(x=>x.l)}
+function equationHTML(t,big){const e=eqParts();const all=eqLetters();if(!all.length)return'';
+  const pool=teamLetters(t).slice();let got=0;
+  const row=toks=>`<div class="eq-row">${toks.map(tk=>{if(tk.o)return `<span class="eq-op">${tk.o}</span>`;
+    const i=pool.findIndex(x=>x.l===tk.l);if(i>-1){const x=pool.splice(i,1)[0];got++;const fresh=S.justStamped&&x.c&&x.c.id===S.justStamped;
+      return `<span class="tile${fresh?' flip':''}" title="${esc(x.c?x.c.name:'')}">${esc(tk.l)}${x.c&&x.c.flag?`<span class="tf">${esc(x.c.flag)}</span>`:''}</span>`}
+    return `<span class="tile empty-t" aria-label="letter not won yet"></span>`}).join('')}</div>`;
+  const topH=row(e.top),botH=e.bot.length?row(e.bot):'',aftH=e.after.length?row(e.after):'';
+  const done=got===all.length;
+  const body=`<div class="eq">${e.res?`<span class="eq-res">${done?esc(e.res):'?'}</span><span class="eq-op">=</span>`:''}
+    ${e.bot.length?`<div class="eq-frac">${topH}<div class="eq-bar"></div>${botH}</div>`:topH}${aftH}</div>`;
+  return `<section class="panel eqp"><div class="spread"><div><span class="label">Collect the letters</span><h3>The equation</h3></div>${got===all.length?'<span class="eq-done">Complete</span>':`<span class="label">${got} / ${all.length} letters</span>`}</div>${body}
+    <span class="label" style="text-align:center">Win a letter at each station when the operator stamps your passport</span></section>`}
+function showReveal(c,letter,pts){const r=document.getElementById('reveal');
+  r.innerHTML=`<div class="reveal-card" role="dialog" aria-modal="true"><span class="label" style="color:#BFD9E6">${esc(c.flag||'')} ${esc(c.name)} · +${pts} points</span>
+    <span class="tile">${esc(letter)}</span><h3>You won the letter ${esc(letter)}</h3><span class="label" style="color:#BFD9E6">Tap to continue</span></div>`;r.hidden=false}
+
 function passportHTML(t){const r=route(t),p=prog(t.id);
   return `<section class="panel"><div class="spread"><h3>Passport</h3><span class="label">${p.stamps.length} / ${r.length} stamps</span></div>
   <div class="passport">${r.map((c,i)=>{const s=p.stamps.find(x=>x.countryId===c.id);
@@ -323,14 +383,27 @@ function passportHTML(t){const r=route(t),p=prog(t.id);
 
 let installEvt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;render(true)});
-window.addEventListener('appinstalled',()=>{installEvt=null;render(true)});
+window.addEventListener('appinstalled',()=>{installEvt=null;lsSet('atw-installed','1');render(true)});
+function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}
 function installHTML(){
-  const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
-  if(standalone)return'';
-  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  if(installEvt)return `<div class="install"><img src="icon-192.png" alt=""><p style="flex:1"><b>Install the app</b><br>Add Around the World to this phone's home screen.</p><button class="btn primary small" data-act="install">Install</button></div>`;
-  if(ios)return `<div class="install"><img src="icon-192.png" alt=""><p><b>Add to Home Screen</b><br>Tap the Share button <span aria-hidden="true">⬆︎</span> in Safari, then <b>Add to Home Screen</b>.</p></div>`;
-  return `<div class="install"><img src="icon-192.png" alt=""><p><b>Add to Home Screen</b><br>Open the browser menu ⋮ and choose <b>Add to Home screen</b> or <b>Install app</b>.</p></div>`;
+  if(isStandalone()||lsGet('atw-installed'))return'';
+  return `<button type="button" class="install" data-act="install" aria-label="Add Around the World to your home screen"><img src="icon-192.png" alt=""><span class="ins-t"><b>Add the game to your home screen</b><br>Opens full screen like an app, one tap away.</span><span class="btn primary small" aria-hidden="true">${installEvt?'Install':'Add'}</span></button>`;
+}
+function showInstallGuide(){
+  const ua=navigator.userAgent,ios=/iphone|ipad|ipod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const inSafari=ios&&!/crios|fxios|edgios|opios|gsa\//i.test(ua);
+  const steps=ios?(inSafari?[
+      ['1','Tap <b>Share</b> <span class="kbd">⬆︎</span> in Safari\'s bottom bar (on newer iPhones tap <span class="kbd">•••</span> first, then <b>Share</b>).'],
+      ['2','Scroll down and tap <b>Add to Home Screen</b> <span class="kbd">⊞</span>.'],
+      ['3','Tap <b>Add</b> (top right). The globe icon appears on your home screen.']]
+    :[['1','This only works in <b>Safari</b>. Copy the link and open it in Safari.'],['2','Then tap <b>Share</b> <span class="kbd">⬆︎</span> → <b>Add to Home Screen</b> → <b>Add</b>.']])
+    :[['1','Tap the browser menu <span class="kbd">⋮</span> (top right).'],['2','Tap <b>Install app</b> or <b>Add to Home screen</b>.'],['3','Tap <b>Install</b> / <b>Add</b>.']];
+  const g=document.getElementById('guide');
+  g.innerHTML=`<div class="guide-card" role="dialog" aria-modal="true" aria-labelledby="guide-h"><img src="icon-192.png" alt="" class="guide-ic"><h3 id="guide-h">Add Around the World to your home screen</h3>
+    <ol>${steps.map(([n,t])=>`<li><span class="n">${n}</span><span>${t}</span></li>`).join('')}</ol>
+    <div class="row" style="justify-content:center"><button class="btn" data-act="guidedone">Done</button><button class="btn" data-act="guideclose">Not now</button></div></div>
+    ${ios&&inSafari?'<div class="guide-arrow" aria-hidden="true">⬇︎</div>':''}`;
+  g.hidden=false;
 }
 function vPlay(){
   if(!S.ready)return `<div class="panel empty"><div class="big">Loading the terminal</div></div>`;
@@ -354,7 +427,7 @@ function vPlay(){
   const fl=S.flash?`<div class="flash ${S.flash.k}${S.flash.k==='bad'?' shake':''}" role="status" id="inline-flash">${esc(S.flash.m)}</div>`:'';
   if(S.flash&&(p.step>=n||!n))h+=fl;
   if(!n)return h+`<div class="panel empty"><div class="big">Cargo not loaded</div><p class="muted">No countries have been added yet.</p></div>`;
-  if(p.step>=n){h+=`<section class="panel empty"><img src="assets/landmarks.png" alt="" width="420" height="273" style="width:min(420px,100%);height:auto"><span class="label">All shipments delivered</span><div class="big" style="font-size:40px">Journey complete</div><p class="muted">${n} countries, ${score(team.id)} points. Head back to the organiser and check the leaderboard.</p></section>`;return h+passportHTML(team)}
+  if(p.step>=n){h+=`<section class="panel empty"><img src="assets/landmarks.png" alt="" width="420" height="273" style="width:min(420px,100%);height:auto"><span class="label">All shipments delivered</span><div class="big" style="font-size:40px">Journey complete</div><p class="muted">${n} countries, ${score(team.id)} points. Head back to the organiser and check the leaderboard.</p></section>`;return h+equationHTML(team)+passportHTML(team)}
   const c=r[p.step];
   if(p.phase==='flyer'){
     const hinted=p.hints.includes(c.id);
@@ -370,12 +443,12 @@ function vPlay(){
     h+=`<article class="flyer"><div class="band"><span>Cleared for landing</span><span>${esc(code3(c))}</span></div>
       <div class="body"><div class="row"><span style="font-size:44px;line-height:1">${esc(c.flag||'✈')}</span><h2 style="font-size:40px">${esc(c.name)}</h2></div>
       <div><span class="label">Go to the ${esc(c.name)} station and play</span><div class="clue" style="font-size:19px">${esc(c.challenge||'Ask the station operator for the challenge.')}</div></div>
-      ${fl}<form data-form="stamp" class="panel" style="background:var(--soft)"><div><span class="label">For the station operator</span><h3>Stamp this passport</h3></div>
+      ${fl}<form data-form="stamp" class="panel" style="background:var(--soft)"><div><span class="label">For the station operator</span><h3>Stamp this passport${c.letter?` <span class="muted" style="font-weight:500">· awards a letter</span>`:''}</h3></div>
         <div class="grid2"><div class="field"><label for="s-code">Stamp code</label><input id="s-code" name="code" inputmode="numeric" autocomplete="off" type="password" placeholder="Operator only"></div>
         <div class="field"><label for="s-pts">Points earned (max ${+c.points||0})</label><input id="s-pts" name="pts" type="number" min="0" max="${+c.points||0}" value="${+c.points||0}"></div></div>
         <div><button class="btn primary">Stamp passport</button></div></form></div></article>`;
   }
-  return h+passportHTML(team);
+  return h+equationHTML(team)+passportHTML(team);
 }
 
 function vBoard(){
@@ -384,7 +457,7 @@ function vBoard(){
   <div class="board">${ranked().map((x,i)=>{const r=route(x.t);return `<div class="lb${i===0&&x.score>0?' first':''}"><div class="rank">${x.score>0&&i<3?`<span class="medal">${['🥇','🥈','🥉'][i]}</span>`:i+1}</div>
     <div style="min-width:0"><div class="nm"><span class="dot" style="background:${esc(x.t.color)}"></span>${esc(x.t.name)}</div>
     <div class="pips">${r.map(c=>{const on=x.p.stamps.some(s=>s.countryId===c.id);return `<span class="pip${on?' on':''}" title="${on?esc(c.name):''}">${on?esc(c.flag||'✓'):''}</span>`}).join('')}</div></div>
-    <div class="sc">${x.score}<small>POINTS</small></div></div>`}).join('')}</div><img class="boardland" src="assets/landmarks.png" alt="" width="560" height="364">`;
+    <div class="sc">${x.score}<small>POINTS${eqLetters().length?` · ${Math.min(teamLetters(x.t).length,eqLetters().length)}/${eqLetters().length} LETTERS`:''}</small></div></div>`}).join('')}</div><img class="boardland" src="assets/landmarks.png" alt="" width="560" height="364">`;
 }
 
 function armBtn(key,act,label,extra=''){const a=S.armed===key;return `<button class="btn small danger${a?' armed':''}" data-act="${a?act:'arm'}" data-key="${key}" ${extra}>${a?'Confirm':label}</button>`}
@@ -397,6 +470,7 @@ function countryForm(c){c=c||{};const isNew=!c.id;
   <div class="field"><label for="c-flag">Flag emoji</label><input id="c-flag" name="flag" value="${esc(c.flag)}" placeholder="🇯🇵"></div>
   <div class="field"><label for="c-code">3-letter code (on stamp)</label><input id="c-code" name="code" maxlength="3" value="${esc(c.code)}" placeholder="JPN"></div>
   <div class="field"><label for="c-points">Max points</label><input id="c-points" name="points" type="number" min="0" value="${esc(c.points??100)}"></div>
+  <div class="field"><label for="c-letter">Letter won here (equation)</label><input id="c-letter" name="letter" maxlength="1" style="text-transform:uppercase;font-family:var(--display);font-size:22px;width:70px" value="${esc(c.letter||'')}" placeholder="–"></div>
   <div class="field"><label for="c-sets">Game sets (teams that can play here at once)</label><input id="c-sets" name="sets" type="number" min="1" max="20" value="${esc(c.sets??1)}"></div></div>
   <div class="field"><label for="c-clue">Flyer clue text</label><textarea id="c-clue" name="clue" placeholder="The riddle that points to this country. Optional if you add a photo.">${esc(c.clue)}</textarea></div>
   <div class="field"><label for="c-photo">Photo clues (up to 4: puzzle slide, grid, cipher, map piece…)</label>
@@ -410,6 +484,13 @@ function countryForm(c){c=c||{};const isNew=!c.id;
   <div class="field"><label for="c-color">Stamp ink</label><input id="c-color" name="color" type="color" value="${esc(c.color||'#B42340')}" style="height:44px;padding:4px"></div></div>
   <div class="row"><button class="btn primary" ${S.busy?'disabled':''}>${S.busy?'Saving…':isNew?'Add country':'Save changes'}</button><button type="button" class="btn" data-act="cancel">Cancel</button></div></form>`}
 
+function eqCheckHTML(){const need={},have={};eqLetters().forEach(l=>need[l]=(need[l]||0)+1);
+  S.countries.forEach(c=>{const l=String(c.letter||'').toUpperCase();if(l)(have[l]=have[l]||[]).push(c)});
+  const keys=[...new Set([...Object.keys(need),...Object.keys(have)])].sort();if(!keys.length)return'';
+  const issues=keys.filter(k=>(need[k]||0)!==(have[k]||[]).length);
+  return `<div class="note"><b>Equation letters vs. countries</b> ${issues.length?'<span style="color:var(--stamp);font-weight:700">· needs attention</span>':'<span style="color:var(--ok);font-weight:700">· all matched</span>'}
+    <div style="display:grid;gap:4px;margin-top:6px">${keys.map(k=>{const n=need[k]||0,h=(have[k]||[]);const ok=n===h.length;
+      return `<div><b style="font-family:var(--display);font-size:18px;color:var(--navy)">${k}</b> needed ${n}× · from ${h.length?h.map(c=>esc(c.flag+' '+c.name)).join(', '):'<i>no country</i>'} ${ok?'✅':'⚠️'}</div>`}).join('')}</div></div>`}
 function curImgs(c){if(S.pendingImg!==undefined)return S.pendingImg;if(!c||!c.imgV)return[];return imgFor(c)}
 function editingCountry(){const e=S.editing||'';return e.startsWith('c-')&&e!=='c-new'?S.countries.find(c=>'c-'+c.id===e):null}
 function teamForm(t){t=t||{};const isNew=!t.id;const n=S.countries.length;
@@ -437,7 +518,7 @@ function vControl(){
     :`<p class="muted">Add teams below to start tracking.</p>`;
   const countries=`<section class="panel"><div class="spread"><div><span class="label">Route</span><h2>Countries</h2></div>${E==='c-new'?'':`<button class="btn primary" data-act="edit" data-e="c-new">Add country</button>`}</div>
     ${E==='c-new'?countryForm():''}
-    ${S.countries.length?S.countries.map((c,i)=>E==='c-'+c.id?countryForm(c):`<div class="item"><span class="fl">${esc(c.flag||'✈')}</span><div style="min-width:0"><h3>${i+1}. ${esc(c.name)} <span class="label">· ${esc(code3(c))} · ${+c.points||0} pts · ${Math.max(1,+c.sets||1)} set${(+c.sets||1)>1?'s':''} · code ${esc(c.stampCode||'—')}${c.imgV?` · ${c.imgN||1} photo${(c.imgN||1)>1?'s':''}${c.overlay?' (overlay)':''}`:''}</span></h3>${c.clue?`<p>${esc(c.clue)}</p>`:''}${c.challenge?`<p><b>Station:</b> ${esc(c.challenge)}</p>`:''}</div>
+    ${S.countries.length?S.countries.map((c,i)=>E==='c-'+c.id?countryForm(c):`<div class="item"><span class="fl">${esc(c.flag||'✈')}</span><div style="min-width:0"><h3>${i+1}. ${esc(c.name)} <span class="label">· ${esc(code3(c))} · ${+c.points||0} pts ${c.letter?`· letter <b style="color:var(--navy)">${esc(c.letter)}</b> `:''}· ${Math.max(1,+c.sets||1)} set${(+c.sets||1)>1?'s':''} · code ${esc(c.stampCode||'—')}${c.imgV?` · ${c.imgN||1} photo${(c.imgN||1)>1?'s':''}${c.overlay?' (overlay)':''}`:''}</span></h3>${c.clue?`<p>${esc(c.clue)}</p>`:''}${c.challenge?`<p><b>Station:</b> ${esc(c.challenge)}</p>`:''}</div>
       <div class="acts"><button class="btn small" data-act="move" data-id="${c.id}" data-d="-1" ${i===0?'disabled':''} aria-label="Move up">↑</button><button class="btn small" data-act="move" data-id="${c.id}" data-d="1" ${i===S.countries.length-1?'disabled':''} aria-label="Move down">↓</button>
       <button class="btn small" data-act="edit" data-e="c-${c.id}">Edit</button>${armBtn('dc-'+c.id,'delcountry','Delete',`data-id="${c.id}"`)}</div></div>`).join(''):(E==='c-new'?'':`<div class="note">No countries yet. Each country is one shipment flyer: a text and/or photo clue, the accepted answers, the station challenge and a stamp code.</div>`)}</section>`;
   const teams=`<section class="panel"><div class="spread"><div><span class="label">Crews</span><h2>Teams</h2></div>${E==='t-new'?'':`<button class="btn primary" data-act="edit" data-e="t-new">Add team</button>`}</div>
@@ -470,7 +551,12 @@ function vControl(){
     <form data-form="config" class="grid2"><div class="field"><label for="g-title">Game title</label><input id="g-title" name="title" value="${esc(cfg.title)}"></div>
     <div class="field"><label for="g-hint">Hint costs (pts)</label><input id="g-hint" name="hintCost" type="number" min="0" value="${esc(cfg.hintCost)}"></div>
     <div class="field"><label for="g-wrong">Wrong guess costs (pts)</label><input id="g-wrong" name="wrongPenalty" type="number" min="0" value="${esc(cfg.wrongPenalty)}"></div>
+    <div class="field"><label for="g-eqr">Equation result</label><input id="g-eqr" name="eqResult" value="${esc(cfg.eqResult)}" placeholder="TW"></div>
+    <div class="field"><label for="g-eqt">Top line (letters and × + −)</label><input id="g-eqt" name="eqTop" value="${esc(cfg.eqTop)}" placeholder="C × C × C"></div>
+    <div class="field"><label for="g-eqb">Bottom line (leave empty for no fraction)</label><input id="g-eqb" name="eqBottom" value="${esc(cfg.eqBottom)}" placeholder="L + V"></div>
+    <div class="field"><label for="g-eqa">After the fraction</label><input id="g-eqa" name="eqAfter" value="${esc(cfg.eqAfter)}" placeholder="× U"></div>
     <div class="field" style="align-self:end"><button class="btn primary">Save settings</button></div></form>
+    ${eqCheckHTML()}
     <div class="spread note"><span>Clear every stamp and score before a new event. Countries and teams stay.</span>${armBtn('reset-all','resetall','Reset all progress')}</div>
     <div class="spread note"><span><b>Logic starter pack:</b> 8 countries with clues (your deck puzzles included), station games, stamp codes and 8 teams with tracks. Replaces the current countries, teams and progress.</span>${armBtn('starter','starter','Load starter pack')}</div></section>`;
   const join=`<section class="panel"><div class="spread"><div><span class="label">Boarding</span><h2>Team join link</h2></div>${S.mode==='live'?`<button class="btn small" data-act="logout">Sign out ${esc(S.user&&S.user.email||'')}</button>`:''}</div>
@@ -481,7 +567,9 @@ function vControl(){
 /* ================= actions ================= */
 function flash(k,m){S.flash={k,m};clearTimeout(flash.t);flash.t=setTimeout(()=>{S.flash=null;render(true)},3500)}
 async function doStamp(t,c,pts,by){const p=prog(t.id);const n=route(t).length;
-  p.stamps=[...p.stamps.filter(s=>s.countryId!==c.id),{countryId:c.id,points:pts,at:Date.now(),by}];p.step=p.step+1;p.phase='flyer';
+  const letter=String(c.letter||'').toUpperCase().slice(0,1);
+  p.stamps=[...p.stamps.filter(s=>s.countryId!==c.id),{countryId:c.id,points:pts,at:Date.now(),by,letter}];p.step=p.step+1;p.phase='flyer';
+  if(letter&&by==='station')showReveal(c,letter,pts);
   if(p.step>=n)p.finishedAt=Date.now();S.justStamped=c.id;setTimeout(()=>{S.justStamped=null},1200);await saveProg(t.id,p)}
 
 document.addEventListener('change',async e=>{
@@ -511,7 +599,10 @@ document.addEventListener('click',async e=>{
   if(a==='ovreset'){OV[id]={x:24,y:24,op:.6};render(true);return}
   if(a==='copy'){try{await navigator.clipboard.writeText(joinURL());flash('good','Link copied.')}catch(err){flash('bad','Copy failed. Select the link and copy it.')}render(true);return}
   if(a==='logout'){await api.signOut();return}
-  if(a==='install'){if(installEvt){installEvt.prompt();try{await installEvt.userChoice}catch(_){}installEvt=null;render(true)}return}
+  if(a==='install'){if(installEvt){installEvt.prompt();try{const c=await installEvt.userChoice;if(c&&c.outcome==='accepted')lsSet('atw-installed','1')}catch(_){}installEvt=null;render(true)}else showInstallGuide();return}
+  if(a==='guidedone'){lsSet('atw-installed','1');document.getElementById('guide').hidden=true;render(true);return}
+  if(a==='closereveal'){document.getElementById('reveal').hidden=true;return}
+  if(a==='guideclose'){document.getElementById('guide').hidden=true;return}
   if(a==='sample'){await loadSample();flash('good','Example countries and teams loaded.');render();return}
   if(a==='starter'){S.busy=true;flash('good','Loading starter pack…');render(true);try{await loadStarter();flash('good','Starter pack loaded: 8 countries, 8 teams, tracks set.')}catch(err){S.err='Starter pack could not be loaded: '+(err&&err.message||err)}S.busy=false;render(true);return}
   if(a==='autotrack'){const {routes,bad}=scheduleTracks();for(let k=0;k<S.teams.length;k++){await w(`teams/${S.teams[k].id}/route`,routes[k])}
@@ -550,7 +641,7 @@ document.addEventListener('submit',async e=>{
     setTimeout(()=>{const el=document.getElementById('inline-flash');if(el)el.scrollIntoView({behavior:'smooth',block:'center'})},60);return}
   if(kind==='stamp'){const t=S.teams.find(x=>x.id===S.myTeam);const p=prog(t.id),c=route(t)[p.step];if(!c)return;
     if(String(d.code).trim()!==String(c.stampCode||'').trim()){flash('bad','Wrong stamp code. Only the station operator should enter it.');render(true);return}
-    const pts=Math.max(0,Math.min(+c.points||0,Math.round(+d.pts||0)));flash('good',`Stamped: ${c.name}, +${pts} points.`);await doStamp(t,c,pts,'station');return}
+    const pts=Math.max(0,Math.min(+c.points||0,Math.round(+d.pts||0)));flash('good',`Stamped: ${c.name}, +${pts} points${c.letter?` and the letter ${String(c.letter).toUpperCase()}`:''}.`);await doStamp(t,c,pts,'station');return}
   if(kind==='country'){const id=f.dataset.id||rid();const old=S.countries.find(c=>c.id===id)||{};
     const hasImg=S.pendingImg!==undefined?S.pendingImg.length>0:!!old.imgV;
     if(!d.clue.trim()&&!hasImg){S.err='Add a clue text or a photo so teams have something to solve.';render(true);return}
@@ -558,14 +649,14 @@ document.addEventListener('submit',async e=>{
     let imgV=old.imgV||null;
     if(S.pendingImg!==undefined){if(S.pendingImg.length){await w(`images/${id}`,S.pendingImg);imgV=Date.now();IMG[id+'@'+imgV]=S.pendingImg}else{await w(`images/${id}`,null);imgV=null}}
     const order=old.id?(old.order??S.countries.indexOf(old)):S.countries.length;
-    await w(`countries/${id}`,{name:d.name.trim(),flag:d.flag.trim(),code:d.code.trim().toUpperCase(),points:Math.max(0,+d.points||0),clue:d.clue.trim(),answers:d.answers.trim(),hint:d.hint.trim(),challenge:d.challenge.trim(),stampCode:d.stampCode.trim(),color:d.color,sets:Math.max(1,Math.min(20,Math.round(+d.sets||1))),order,imgV,imgN:hasImg?(S.pendingImg!==undefined?S.pendingImg.length:(old.imgN||1)):0,overlay:!!d.overlay});
+    await w(`countries/${id}`,{name:d.name.trim(),flag:d.flag.trim(),code:d.code.trim().toUpperCase(),points:Math.max(0,+d.points||0),clue:d.clue.trim(),answers:d.answers.trim(),hint:d.hint.trim(),challenge:d.challenge.trim(),stampCode:d.stampCode.trim(),color:d.color,letter:String(d.letter||'').trim().toUpperCase().slice(0,1),sets:Math.max(1,Math.min(20,Math.round(+d.sets||1))),order,imgV,imgN:hasImg?(S.pendingImg!==undefined?S.pendingImg.length:(old.imgN||1)):0,overlay:!!d.overlay});
     S.busy=false;S.editing=null;S.pendingImg=undefined;render();return}
   if(kind==='team'){const id=f.dataset.id||rid();const old=S.teams.find(t=>t.id===id);const st=+d.start||0;
     const keep=old&&(+old.start||0)===st&&arr(old.route).length?arr(old.route):rotation(st).map(c=>c.id);
     await w(`teams/${id}`,{name:d.name.trim(),pin:d.pin.trim(),start:st,route:keep,color:d.color,created:(old||{}).created||Date.now()});S.editing=null;render();return}
   if(kind==='allsets'){const k=Math.max(1,Math.min(9,+d.sets||1));for(const c of S.countries){await w(`countries/${c.id}/sets`,k)}
     flash('good',`All ${S.countries.length} countries set to ${k} game set${k>1?'s':''}. Press Auto-arrange to update the tracks.`);render(true);return}
-  if(kind==='config'){await w('config',{title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0)});flash('good','Settings saved.');render(true);return}
+  if(kind==='config'){await w('config',{title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim()});flash('good','Settings saved.');render(true);return}
   }catch(err){S.busy=false;render(true)}
 });
 
@@ -607,7 +698,7 @@ async function loadStarter(){
   const ver=Date.now();
   for(let i=0;i<P.countries.length;i++){const c=P.countries[i];const imgs=(c.photos||[]).map(k=>P.photos[k]).filter(Boolean);
     if(imgs.length)await w(`images/${c.id}`,imgs);
-    await w(`countries/${c.id}`,{name:c.name,flag:c.flag,code:c.code,points:c.points||100,clue:c.clue||'',answers:c.answers||'',hint:c.hint||'',challenge:c.challenge||'',stampCode:c.stampCode,color:c.color,sets:c.sets||1,order:i,imgV:imgs.length?ver:null,imgN:imgs.length,overlay:!!c.overlay})}
+    await w(`countries/${c.id}`,{name:c.name,flag:c.flag,code:c.code,points:c.points||100,clue:c.clue||'',answers:c.answers||'',hint:c.hint||'',challenge:c.challenge||'',stampCode:c.stampCode,color:c.color,letter:c.letter||'',sets:c.sets||1,order:i,imgV:imgs.length?ver:null,imgN:imgs.length,overlay:!!c.overlay})}
   const ids=P.countries.map(c=>c.id),n=ids.length;
   for(let k=0;k<P.teams.length;k++){const t=P.teams[k];await w(`teams/${t.id}`,{name:t.name,pin:t.pin,color:t.color,start:k%n,route:ids.map((_,i)=>ids[(k+i)%n]),created:ver+k})}
   if(P.config)await w('config',{...DEF,...P.config});
