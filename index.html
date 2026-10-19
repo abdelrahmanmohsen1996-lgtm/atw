@@ -107,7 +107,15 @@ textarea{resize:vertical;min-height:84px}
 .overlay{display:grid;gap:8px}
 .ovstage{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:8px;background:#fff;touch-action:none}
 .ovstage img{display:block;width:100%;user-select:none;-webkit-user-drag:none;pointer-events:none}
-.ovstage img.ovtop{position:absolute;inset:0;mix-blend-mode:multiply;cursor:grab;pointer-events:auto;touch-action:none}
+.ovstage img.ovtop{position:absolute;inset:0;mix-blend-mode:multiply;cursor:grab;pointer-events:auto;touch-action:none;outline:2px dashed rgba(8,82,113,.55);outline-offset:-2px;background:rgba(190,220,240,.12)}
+.overlay.ovfull{position:fixed;inset:0;z-index:80;background:#0B1A24;padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));display:grid;align-content:center;justify-items:center;gap:10px}
+.overlay.ovfull .ovstage{width:min(100%,calc((100vh - 110px)*16/9))}
+.overlay.ovfull .row,.overlay.ovfull .ovmsg{color:#DCE7EE;width:min(100%,calc((100vh - 110px)*16/9))}
+.overlay.ovfull .label{color:#9FB7C6}
+.overlay.ovfull .btn:not(.primary){color:var(--ink)}
+@media (orientation:portrait){.overlay.ovfull::before{content:"Turn your phone sideways for a bigger sheet ↻";color:#9FB7C6;font-size:13px}}
+.ovstage.aligned{box-shadow:0 0 0 3px var(--logic-hi)}
+.ovstage.aligned img.ovtop{outline-color:transparent}
 .photos{display:grid;gap:10px}
 .thumbs{display:flex;gap:8px;flex-wrap:wrap}
 .thumbs figure{margin:0;display:grid;gap:4px;justify-items:start}
@@ -226,9 +234,17 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 .sessbar .st{font-family:var(--display);font-size:24px;text-transform:uppercase;color:var(--navy);line-height:1}
 .sessbar .grow{flex:1 1 200px;min-width:0}
 .btn.go{background:var(--logic-hi);border-color:var(--logic-hi);color:#fff;font-size:16px;padding:12px 22px}
+.gridbox{display:grid;gap:8px}
+.lgrid{display:grid;gap:6px;background:var(--soft);padding:8px;border-radius:12px;border:1px solid var(--line)}
+.grow-r{display:grid;gap:6px}
+.gcell{aspect-ratio:1.25/1;border-radius:8px;border:1px solid var(--line);background:linear-gradient(#fff,#ECEFF3);font-family:var(--display);font-size:clamp(20px,6vw,30px);color:var(--ink);cursor:pointer;position:relative;padding:0;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.gcell.x{color:var(--muted);background:#F7E9E6}
+.gcell.x::after{content:"";position:absolute;left:14%;right:14%;top:50%;height:4px;background:var(--stamp);border-radius:2px;transform:rotate(-35deg)}
+.gleft{font-family:var(--display);font-size:18px;letter-spacing:.12em;color:var(--navy)}
 .audiobox{display:flex;gap:12px;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px}
 .audiobox .ab-ic{font-size:30px;line-height:1}
 .audiobox audio{width:100%;margin-top:6px;display:block}
+.finish{border:2px solid var(--logic-hi);background:linear-gradient(180deg,color-mix(in srgb,var(--logic-hi) 9%,var(--card)),var(--card))}
 .empty{text-align:center;padding:36px 18px;display:grid;gap:8px;justify-items:center}
 .empty .big{font-family:var(--display);font-size:26px;font-weight:400;text-transform:uppercase}
 .qrbox{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -256,7 +272,7 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 
 <script type="module">
 const FBV='10.12.2';
-const DEF={title:'Around the World',hintCost:20,wrongPenalty:5,eqResult:'TW',eqTop:'C × C × C',eqBottom:'L + V',eqAfter:'× U'};
+const DEF={title:'Around the World',hintCost:20,wrongPenalty:5,eqResult:'TW',eqTop:'C × C × C',eqBottom:'L + V',eqAfter:'× U',finalMessage:'Head back to the meeting room'};
 const COLORS=['#E8590C','#1C7ED6','#2B8A3E','#AE3EC9','#C92A2A','#0C8599','#E67700','#5F3DC4'];
 const S={countries:[],teams:[],progress:{},config:{...DEF},canEdit:false,mode:'connecting',ready:false,user:null,
   view:'play',myTeam:lsGet('atw-team'),pick:null,flash:null,editing:null,armed:null,justStamped:null,err:null,pendingImg:undefined,busy:false};
@@ -340,7 +356,9 @@ const normImgs=v=>typeof v==='string'?[v]:arr(v).filter(x=>typeof x==='string'&&
 function imgFor(c){if(!c||!c.imgV)return null;const k=c.id+'@'+c.imgV;
   if(IMG[k]===undefined){IMG[k]='loading';api.blobGet('images/'+c.id).then(v=>{IMG[k]=normImgs(v);render(true)}).catch(()=>{IMG[k]=[];render(true)})}
   return IMG[k]}
-const OV={}; // overlay offsets per country
+const OV={}; // overlay offsets per country, in % of the sheet size
+function ovStart(){const r=()=>(Math.random()<.5?-1:1)*(10+Math.random()*12);return{x:r(),y:r(),op:.9}}
+const ovAligned=o=>Math.abs(o.x)<.01&&Math.abs(o.y)<.01;
 /* ===== audio clue (stored at images/a_<countryId>, loaded only when that flyer is open) ===== */
 const AUD={};
 function audFor(c){if(!c||!c.audV)return null;const k=c.id+'@'+c.audV;
@@ -354,13 +372,22 @@ function audioHTML(c){const src=audFor(c);if(src===null||src==='')return'';
 function readAudio(file){return new Promise((res,rej)=>{if(file.size>2.5*1024*1024){rej(new Error('big'));return}
   if(file.type&&!/^audio\//.test(file.type)&&!/\.(mp3|m4a|aac|wav|ogg)$/i.test(file.name)){rej(new Error('type'));return}
   const fr=new FileReader();fr.onerror=rej;fr.onload=()=>res({data:fr.result,name:file.name,size:file.size});fr.readAsDataURL(file)})}
+/* ===== tap-to-cross letter grid ===== */
+function gridRows(c){return String(c.grid||'').split(/\n+/).map(r=>r.trim().toUpperCase().split(/[\s,]+/).filter(Boolean)).filter(r=>r.length)}
+function gridKey(c){return 'atw-grid-'+(S.myTeam||'x')+'-'+c.id}
+function gridState(c){try{return JSON.parse(lsGet(gridKey(c))||'[]')}catch(_){return[]}}
+function gridHTML(c){const rows=gridRows(c);if(!rows.length)return'';const x=new Set(gridState(c));let left=[];
+  const cells=rows.map((r,ri)=>`<div class="grow-r" style="grid-template-columns:repeat(${r.length},1fr)">${r.map((L,ci)=>{const k=ri+'-'+ci,on=x.has(k);if(!on)left.push(L);
+    return `<button type="button" class="gcell${on?' x':''}" data-act="gcell" data-c="${esc(c.id)}" data-k="${k}" aria-pressed="${on}" aria-label="${esc(L)}${on?' crossed out':''}">${esc(L)}</button>`}).join('')}</div>`).join('');
+  return `<div class="gridbox"><span class="label">Tap a letter to cross it out · tap again to undo</span><div class="lgrid">${cells}</div>
+    <div class="spread"><span class="muted" style="font-size:13px">Letters left: <b class="gleft">${x.size?esc(left.join(' ')):'—'}</b></span><button type="button" class="btn small" data-act="gclear" data-c="${esc(c.id)}">Clear</button></div></div>`}
 function photoHTML(c){const im=imgFor(c);if(im===null)return'';
   if(im==='loading')return `<div class="photo loading">Loading photo…</div>`;
   if(!im.length)return'';const k=c.id+'@'+c.imgV;
-  if(c.overlay&&im.length>=2){const o=OV[c.id]||(OV[c.id]={x:24,y:24,op:.6});
-    return `<div class="overlay"><div class="ovstage" id="ovstage"><img src="${im[0]}" alt="Sheet 1"><img class="ovtop" id="ovtop" data-c="${esc(c.id)}" src="${im[1]}" alt="Sheet 2, drag to line up" style="opacity:${o.op};transform:translate(${o.x}px,${o.y}px)"></div>
-      <div class="row"><label for="ov-op" class="label" style="white-space:nowrap">Top sheet</label><input id="ov-op" data-c="${esc(c.id)}" type="range" min="0.2" max="1" step="0.05" value="${o.op}" style="flex:1;padding:0"><button type="button" class="btn small" data-act="ovreset" data-id="${esc(c.id)}">Reset</button></div>
-      <span class="muted" style="font-size:13px">Drag the top sheet until the letters line up.</span>
+  if(c.overlay&&im.length>=2){const o=OV[c.id]||(OV[c.id]=ovStart());const al=ovAligned(o);
+    return `<div class="overlay${o.full?' ovfull':''}"><div class="ovstage${al?' aligned':''}" id="ovstage"><img src="${im[0]}" alt="Sheet 1"><img class="ovtop" id="ovtop" data-c="${esc(c.id)}" src="${im[1]}" alt="Transparent sheet, drag to line up" style="opacity:${o.op};transform:translate(${o.x}%,${o.y}%)"></div>
+      <div class="row"><label for="ov-op" class="label" style="white-space:nowrap">Transparent sheet</label><input id="ov-op" data-c="${esc(c.id)}" type="range" min="0.3" max="1" step="0.05" value="${o.op}" style="flex:1;padding:0"><button type="button" class="btn small" data-act="ovreset" data-id="${esc(c.id)}">Shuffle</button><button type="button" class="btn small primary" data-act="ovfull" data-id="${esc(c.id)}">${o.full?'Close':'⤢ Full screen'}</button></div>
+      <span class="muted ovmsg" id="ovmsg" style="font-size:13px">${al?'✅ Lined up! Read the letters under the dots, top to bottom.':'Drag the transparent dots sheet (all dots move together) until it sits exactly on the text.'}</span>
       ${im.slice(2).map((src,i)=>`<button type="button" class="photo" data-act="zoom" data-k="${esc(k)}" data-i="${i+2}"><img src="${src}" alt="Photo clue ${i+3}"><span>Tap to enlarge</span></button>`).join('')}</div>`}
   return `<div class="photos">${im.map((src,i)=>`<button type="button" class="photo" data-act="zoom" data-k="${esc(k)}" data-i="${i}"><img src="${src}" alt="Photo clue ${i+1}"><span>Tap to enlarge</span></button>`).join('')}</div>`}
 function compress(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onerror=rej;fr.onload=()=>{const im=new Image();im.onerror=()=>rej(new Error('bad image'));im.onload=()=>{
@@ -482,7 +509,9 @@ function vPlay(){
   const fl=S.flash?`<div class="flash ${S.flash.k}${S.flash.k==='bad'?' shake':''}" role="status" id="inline-flash">${esc(S.flash.m)}</div>`:'';
   if(S.flash&&(p.step>=n||!n))h+=fl;
   if(!n)return h+`<div class="panel empty"><div class="big">Cargo not loaded</div><p class="muted">No countries have been added yet.</p></div>`;
-  if(p.step>=n){h+=`<section class="panel empty"><img src="assets/landmarks.png" alt="" width="420" height="273" style="width:min(420px,100%);height:auto"><span class="label">All shipments delivered</span><div class="big" style="font-size:40px">Journey complete</div><p class="muted">${n} countries, ${score(team.id)} points. Head back to the organiser and check the leaderboard.</p></section>`;return h+passportHTML(team)}
+  if(p.step>=n){h+=`<section class="panel empty finish"><img src="assets/landmarks.png" alt="" width="420" height="273" style="width:min(420px,100%);height:auto"><span class="label">All shipments delivered · ${n} countries · ${score(team.id)} points</span>
+    <div class="big" style="font-size:clamp(30px,9vw,44px);color:var(--navy)">${esc(S.config.finalMessage||DEF.finalMessage)}</div>
+    <p class="muted">Well done, ${esc(team.name)}! Your journey around the world is complete.</p><button class="btn" data-act="view" data-v="eq">See your equation</button></section>`;return h+passportHTML(team)}
   if(!isLive())return h+waitingHTML(sess().state==='paused')+passportHTML(team);
   const c=r[p.step];
   if(p.phase==='flyer'){
@@ -490,6 +519,7 @@ function vPlay(){
     h+=`<article class="flyer"><div class="band"><span>Shipment flyer</span><span>No. ${String(p.step+1).padStart(3,'0')} of ${String(n).padStart(3,'0')}</span></div>
       <div class="body"><span class="label">Destination: unknown · solve the clue</span>
       ${photoHTML(c)}
+      ${gridHTML(c)}
       ${audioHTML(c)}
       ${c.clue?`<div class="clue">${esc(c.clue)}</div>`:''}
       ${c.hint?(hinted?`<div class="hint"><span class="label">Hint</span><div>${esc(c.hint)}</div></div>`:`<div><button class="btn small" data-act="hint">Open hint (−${+S.config.hintCost||0} pts)</button></div>`):''}
@@ -545,6 +575,7 @@ function countryForm(c){c=c||{};const isNew=!c.id;
   <div class="field"><label for="c-photo">Photo clues (up to 4: puzzle slide, grid, cipher, map piece…)</label>
     ${prev}${cur!=='loading'&&cur.length<4?`<input id="c-photo" type="file" accept="image/*" multiple>`:''}
     </div>
+  <div class="field"><label for="c-grid">Tap-to-cross letter grid (optional): one row per line, letters separated by spaces</label><textarea id="c-grid" name="grid" rows="5" style="font-family:var(--mono);letter-spacing:.1em" placeholder="A L M T I&#10;X E S Y I&#10;L U C A T">${esc(c.grid||'')}</textarea></div>
   <div class="field"><label for="c-audio">Audio clue (music or sound, MP3/M4A up to 2.5 MB)</label>
     ${audFormHTML(c)}
   </div>
@@ -603,13 +634,16 @@ function vControl(){
     :`<p class="muted">Add teams below to start tracking.</p>`;
   const countries=`<section class="panel"><div class="spread"><div><span class="label">Route</span><h2>Countries</h2></div>${E==='c-new'?'':`<button class="btn primary" data-act="edit" data-e="c-new">Add country</button>`}</div>
     ${E==='c-new'?countryForm():''}
-    ${S.countries.length?S.countries.map((c,i)=>E==='c-'+c.id?countryForm(c):`<div class="item"><span class="fl">${esc(c.flag||'✈')}</span><div style="min-width:0"><h3>${i+1}. ${esc(c.name)} <span class="label">· ${esc(code3(c))} · ${+c.points||0} pts ${c.letter?`· letter <b style="color:var(--navy)">${esc(c.letter)}</b> `:''}· ${Math.max(1,+c.sets||1)} set${(+c.sets||1)>1?'s':''} · code ${esc(c.stampCode||'—')}${c.audV?' · 🎧 audio':''}${c.imgV?` · ${c.imgN||1} photo${(c.imgN||1)>1?'s':''}${c.overlay?' (overlay)':''}`:''}</span></h3>${c.clue?`<p>${esc(c.clue)}</p>`:''}${c.challenge?`<p><b>Station:</b> ${esc(c.challenge)}</p>`:''}</div>
+    ${S.countries.length?S.countries.map((c,i)=>E==='c-'+c.id?countryForm(c):`<div class="item"><span class="fl">${esc(c.flag||'✈')}</span><div style="min-width:0"><h3>${i+1}. ${esc(c.name)} <span class="label">· ${esc(code3(c))} · ${+c.points||0} pts ${c.letter?`· letter <b style="color:var(--navy)">${esc(c.letter)}</b> `:''}· ${Math.max(1,+c.sets||1)} set${(+c.sets||1)>1?'s':''} · code ${esc(c.stampCode||'—')}${c.audV?' · 🎧 audio':''}${c.grid?' · ▦ grid':''}${c.imgV?` · ${c.imgN||1} photo${(c.imgN||1)>1?'s':''}${c.overlay?' (overlay)':''}`:''}</span></h3>${c.clue?`<p>${esc(c.clue)}</p>`:''}${c.challenge?`<p><b>Station:</b> ${esc(c.challenge)}</p>`:''}</div>
       <div class="acts"><button class="btn small" data-act="move" data-id="${c.id}" data-d="-1" ${i===0?'disabled':''} aria-label="Move up">↑</button><button class="btn small" data-act="move" data-id="${c.id}" data-d="1" ${i===S.countries.length-1?'disabled':''} aria-label="Move down">↓</button>
       <button class="btn small" data-act="edit" data-e="c-${c.id}">Edit</button>${armBtn('dc-'+c.id,'delcountry','Delete',`data-id="${c.id}"`)}</div></div>`).join(''):(E==='c-new'?'':`<div class="note">No countries yet. Each country is one shipment flyer: a text and/or photo clue, the accepted answers, the station challenge and a stamp code.</div>`)}</section>`;
   const teams=`<section class="panel"><div class="spread"><div><span class="label">Crews</span><h2>Teams</h2></div>${E==='t-new'?'':`<button class="btn primary" data-act="edit" data-e="t-new">Add team</button>`}</div>
     ${E==='t-new'?teamForm():''}
     ${S.teams.length?S.teams.map(t=>E==='t-'+t.id?teamForm(t):`<div class="item"><span class="dot" style="background:${esc(t.color)};margin-top:5px"></span><div><h3>${esc(t.name)}</h3><p>PIN ${esc(t.pin)} · starts at ${esc((route(t)[0]||{}).name||'—')}</p></div>
       <div class="acts"><button class="btn small" data-act="edit" data-e="t-${t.id}">Edit</button>${armBtn('dt-'+t.id,'delteam','Delete',`data-id="${t.id}"`)}</div></div>`).join(''):(E==='t-new'?'':`<div class="note">No teams yet. Give each team a PIN so only they can play on their phone.</div>`)}
+    <form data-form="quickteams" class="row note" style="align-items:flex-end"><div class="field" style="flex:0 1 160px"><label for="q-n">Number of teams</label><input id="q-n" name="n" type="number" min="1" max="60" value="${S.teams.length||8}"></div>
+      <button class="btn primary">${S.teams.length?'Replace with new teams':'Create teams'}</button>
+      <span class="muted" style="font-size:13px;flex:1 1 220px">Creates Team 1, Team 2 … with their own PIN and colour, and arranges clash-free tracks.${S.teams.length?' Removes the current teams and their progress.':''}</span></form>
     <div class="note">Teams start at different countries so stations don't crowd. Every team still visits every country.</div></section>`;
   const n=S.countries.length;
   const grid=S.teams.map(t=>route(t).map(c=>c.id));
@@ -636,6 +670,7 @@ function vControl(){
     <form data-form="config" class="grid2"><div class="field"><label for="g-title">Game title</label><input id="g-title" name="title" value="${esc(cfg.title)}"></div>
     <div class="field"><label for="g-hint">Hint costs (pts)</label><input id="g-hint" name="hintCost" type="number" min="0" value="${esc(cfg.hintCost)}"></div>
     <div class="field"><label for="g-wrong">Wrong guess costs (pts)</label><input id="g-wrong" name="wrongPenalty" type="number" min="0" value="${esc(cfg.wrongPenalty)}"></div>
+    <div class="field" style="grid-column:1/-1"><label for="g-final">Message when a team finishes all countries</label><input id="g-final" name="finalMessage" value="${esc(cfg.finalMessage||DEF.finalMessage)}"></div>
     <div class="field"><label for="g-eqr">Equation result</label><input id="g-eqr" name="eqResult" value="${esc(cfg.eqResult)}" placeholder="TW"></div>
     <div class="field"><label for="g-eqt">Top line (letters and × + −)</label><input id="g-eqt" name="eqTop" value="${esc(cfg.eqTop)}" placeholder="C × C × C"></div>
     <div class="field"><label for="g-eqb">Bottom line (leave empty for no fraction)</label><input id="g-eqb" name="eqBottom" value="${esc(cfg.eqBottom)}" placeholder="L + V"></div>
@@ -643,7 +678,7 @@ function vControl(){
     <div class="field" style="align-self:end"><button class="btn primary">Save settings</button></div></form>
     ${eqCheckHTML()}
     <div class="spread note"><span>Clear every stamp and score before a new event. Countries and teams stay.</span>${armBtn('reset-all','resetall','Reset all progress')}</div>
-    <div class="spread note"><span><b>Logic starter pack:</b> 8 countries with clues (your deck puzzles included), station games, stamp codes and 8 teams with tracks. Replaces the current countries, teams and progress.</span>${armBtn('starter','starter','Load starter pack')}</div></section>`;
+    <div class="spread note"><span><b>Logic starter pack:</b> the standard countries with their clues (grid, codes, cuisine, transparent sheet, music), station games, stamp codes and 8 teams with tracks. Uploaded audio is kept. Replaces the current countries, teams and progress.</span>${armBtn('starter','starter','Load starter pack')}</div></section>`;
   const join=`<section class="panel"><div class="spread"><div><span class="label">Boarding</span><h2>Team join link</h2></div>${S.mode==='live'?`<button class="btn small" data-act="logout">Sign out ${esc(S.user&&S.user.email||'')}</button>`:''}</div>
     <div class="qrbox"><div id="qr"></div><div style="display:grid;gap:8px;min-width:0;flex:1 1 220px"><span class="muted">Teams scan this, pick their team and enter their PIN. No account needed.</span><code>${esc(joinURL())}</code><div><button class="btn small" data-act="copy">Copy link</button></div></div></div></section>`;
   return `<section class="panel"><div class="spread"><div><span class="label">Live operations</span><h2>Control room</h2></div><button class="btn small" data-act="view" data-v="board">Open leaderboard</button></div>${sessbar}${live}</section>${join}${tracks}${countries}${teams}${settings}`;
@@ -681,9 +716,12 @@ document.addEventListener('click',async e=>{
   if(a==='arm'){S.armed=b.dataset.key;render(true);return}
   if(a==='edit'){S.editing=b.dataset.e;S.pendingImg=undefined;S.pendingAud=undefined;render();return}
   if(a==='cancel'){S.editing=null;S.pendingImg=undefined;S.pendingAud=undefined;render();return}
+  if(a==='gcell'||a==='gclear'){const c=S.countries.find(x=>x.id===b.dataset.c);if(!c)return;let st=new Set(gridState(c));
+    if(a==='gclear')st=new Set();else{const k=b.dataset.k;st.has(k)?st.delete(k):st.add(k)}lsSet(gridKey(c),JSON.stringify([...st]));render(true);return}
   if(a==='rmaud'){S.pendingAud=null;render(true);return}
   if(a==='rmimg'){const base=curImgs(editingCountry());if(base==='loading')return;S.pendingImg=base.filter((_,i)=>i!==+b.dataset.i);render(true);return}
-  if(a==='ovreset'){OV[id]={x:24,y:24,op:.6};render(true);return}
+  if(a==='ovreset'){const f=OV[id]&&OV[id].full;OV[id]=ovStart();OV[id].full=f;render(true);return}
+  if(a==='ovfull'){const o=OV[id];if(o){o.full=!o.full;render(true)}return}
   if(a==='copy'){try{await navigator.clipboard.writeText(joinURL());flash('good','Link copied.')}catch(err){flash('bad','Copy failed. Select the link and copy it.')}render(true);return}
   if(a==='logout'){await api.signOut();return}
   if(a==='install'){if(installEvt){installEvt.prompt();try{const c=await installEvt.userChoice;if(c&&c.outcome==='accepted')lsSet('atw-installed','1')}catch(_){}installEvt=null;render(true)}else showInstallGuide();return}
@@ -691,7 +729,7 @@ document.addEventListener('click',async e=>{
   if(a==='closereveal'){document.getElementById('reveal').hidden=true;return}
   if(a==='guideclose'){document.getElementById('guide').hidden=true;return}
   if(a==='sample'){await loadSample();flash('good','Example countries and teams loaded.');render();return}
-  if(a==='starter'){S.busy=true;flash('good','Loading starter pack…');render(true);try{await loadStarter();flash('good','Starter pack loaded: 8 countries, 8 teams, tracks set.')}catch(err){S.err='Starter pack could not be loaded: '+(err&&err.message||err)}S.busy=false;render(true);return}
+  if(a==='starter'){S.busy=true;flash('good','Loading starter pack…');render(true);try{await loadStarter();flash('good','Starter pack loaded: countries, 8 teams and tracks set. Uploaded audio was kept.')}catch(err){S.err='Starter pack could not be loaded: '+(err&&err.message||err)}S.busy=false;render(true);return}
   if(a==='autotrack'){const {routes,bad}=scheduleTracks();for(let k=0;k<S.teams.length;k++){await w(`teams/${S.teams[k].id}/route`,routes[k])}
     flash(bad?'bad':'good',bad?'Arranged as well as possible, but there are not enough game sets: add sets to remove the red cells.':'Tracks arranged: no country ever has more teams than game sets.');render(true);return}
   if(a==='csv'){const head=['Team','PIN',...S.countries.map((_,i)=>'Stop '+(i+1))];const rows=S.teams.map(t=>[t.name,t.pin,...route(t).map(c=>c.name)]);
@@ -734,21 +772,31 @@ document.addEventListener('submit',async e=>{
   if(kind==='country'){const id=f.dataset.id||rid();const old=S.countries.find(c=>c.id===id)||{};
     const hasImg=S.pendingImg!==undefined?S.pendingImg.length>0:!!old.imgV;
     const hasAud=S.pendingAud!==undefined?!!S.pendingAud:!!old.audV;
-    if(!d.clue.trim()&&!hasImg&&!hasAud){S.err='Add a clue text, a photo or an audio clip so teams have something to solve.';render(true);return}
+    if(!d.clue.trim()&&!hasImg&&!hasAud&&!String(d.grid||'').trim()){S.err='Add a clue text, a photo or an audio clip so teams have something to solve.';render(true);return}
     S.busy=true;S.err=null;render(true);
     let imgV=old.imgV||null;
     if(S.pendingImg!==undefined){if(S.pendingImg.length){await wb(`images/${id}`,S.pendingImg);imgV=Date.now();IMG[id+'@'+imgV]=S.pendingImg}else{await wb(`images/${id}`,null);imgV=null}}
     let audV=old.audV||null;
     if(S.pendingAud!==undefined){if(S.pendingAud){S.busyMsg='Uploading audio ('+(S.pendingAud.size/1048576).toFixed(1)+' MB)…';render(true);await wb(`images/a_${id}`,S.pendingAud.data);audV=Date.now();AUD[id+'@'+audV]=S.pendingAud.data}else{await wb(`images/a_${id}`,null);audV=null}}
     const order=old.id?(old.order??S.countries.indexOf(old)):S.countries.length;
-    await w(`countries/${id}`,{name:d.name.trim(),flag:d.flag.trim(),code:d.code.trim().toUpperCase(),points:Math.max(0,+d.points||0),clue:d.clue.trim(),answers:d.answers.trim(),hint:d.hint.trim(),challenge:d.challenge.trim(),stampCode:d.stampCode.trim(),color:d.color,letter:String(d.letter||'').trim().toUpperCase().slice(0,1),sets:Math.max(1,Math.min(20,Math.round(+d.sets||1))),order,imgV,imgN:hasImg?(S.pendingImg!==undefined?S.pendingImg.length:(old.imgN||1)):0,overlay:!!d.overlay,audV});
+    await w(`countries/${id}`,{name:d.name.trim(),flag:d.flag.trim(),code:d.code.trim().toUpperCase(),points:Math.max(0,+d.points||0),clue:d.clue.trim(),answers:d.answers.trim(),hint:d.hint.trim(),challenge:d.challenge.trim(),stampCode:d.stampCode.trim(),color:d.color,letter:String(d.letter||'').trim().toUpperCase().slice(0,1),sets:Math.max(1,Math.min(20,Math.round(+d.sets||1))),order,imgV,imgN:hasImg?(S.pendingImg!==undefined?S.pendingImg.length:(old.imgN||1)):0,overlay:!!d.overlay,audV,grid:String(d.grid||'').trim()});
     S.busy=false;S.busyMsg='';S.editing=null;S.pendingImg=undefined;S.pendingAud=undefined;flash('good',`${d.name.trim()} saved${hasAud?' with audio':''}.`);render();return}
   if(kind==='team'){const id=f.dataset.id||rid();const old=S.teams.find(t=>t.id===id);const st=+d.start||0;
     const keep=old&&(+old.start||0)===st&&arr(old.route).length?arr(old.route):rotation(st).map(c=>c.id);
     await w(`teams/${id}`,{name:d.name.trim(),pin:d.pin.trim(),start:st,route:keep,color:d.color,created:(old||{}).created||Date.now()});S.editing=null;render();return}
+  if(kind==='quickteams'){const N=Math.max(1,Math.min(60,Math.round(+d.n||0)));
+    if(S.teams.length&&S.armed!=='qt'){S.armed='qt';flash('bad',`Press the button again to replace all ${S.teams.length} teams with ${N} new teams.`);render(true);return}
+    S.armed=null;S.busy=true;render(true);
+    for(const t of S.teams){await w(`teams/${t.id}`,null);await w(`progress/${t.id}`,null)}
+    const used=new Set(),ver=Date.now();
+    for(let k=0;k<N;k++){let pin;do{pin=String(1000+Math.floor(Math.random()*9000))}while(used.has(pin));used.add(pin);
+      await w(`teams/t${k+1}`,{name:`Team ${k+1}`,pin,color:QCOL[k%QCOL.length],start:k%Math.max(1,S.countries.length),created:ver+k})}
+    await new Promise(r=>setTimeout(r,300));
+    if(S.countries.length){const {routes}=scheduleTracks();for(let k=0;k<S.teams.length;k++)await w(`teams/${S.teams[k].id}/route`,routes[k])}
+    S.busy=false;flash('good',`${N} teams created with PINs and tracks. Download the sheet (CSV) to print the PINs.`);render(true);return}
   if(kind==='allsets'){const k=Math.max(1,Math.min(9,+d.sets||1));for(const c of S.countries){await w(`countries/${c.id}/sets`,k)}
     flash('good',`All ${S.countries.length} countries set to ${k} game set${k>1?'s':''}. Press Auto-arrange to update the tracks.`);render(true);return}
-  if(kind==='config'){await w('config',{session:S.config.session||null,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim()});flash('good','Settings saved.');render(true);return}
+  if(kind==='config'){await w('config',{session:S.config.session||null,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim(),finalMessage:(d.finalMessage||'').trim()||DEF.finalMessage});flash('good','Settings saved.');render(true);return}
   }catch(err){S.busy=false;S.busyMsg='';render(true)}
 });
 
@@ -757,11 +805,18 @@ document.addEventListener('submit',async e=>{
 
 /* overlay drag */
 let drag=null;
-document.addEventListener('pointerdown',e=>{const t=e.target.closest('#ovtop');if(!t)return;e.preventDefault();const o=OV[t.dataset.c];drag={c:t.dataset.c,sx:e.clientX,sy:e.clientY,ox:o.x,oy:o.y};try{t.setPointerCapture(e.pointerId)}catch(_){}});
-document.addEventListener('pointermove',e=>{if(!drag)return;const o=OV[drag.c];o.x=drag.ox+e.clientX-drag.sx;o.y=drag.oy+e.clientY-drag.sy;const t=document.getElementById('ovtop');if(t)t.style.transform=`translate(${o.x}px,${o.y}px)`});
-['pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev,()=>{drag=null}));
+document.addEventListener('pointerdown',e=>{const t=e.target.closest('#ovtop');if(!t)return;e.preventDefault();const o=OV[t.dataset.c];const st=document.getElementById('ovstage').getBoundingClientRect();
+  drag={c:t.dataset.c,sx:e.clientX,sy:e.clientY,ox:o.x,oy:o.y,w:st.width,h:st.height};try{t.setPointerCapture(e.pointerId)}catch(_){}});
+document.addEventListener('pointermove',e=>{if(!drag)return;const o=OV[drag.c];
+  o.x=drag.ox+(e.clientX-drag.sx)/drag.w*100;o.y=drag.oy+(e.clientY-drag.sy)/drag.h*100;
+  const snap=Math.abs(o.x)<1.6&&Math.abs(o.y)<1.6;if(snap){o.x=0;o.y=0}
+  const t=document.getElementById('ovtop');if(t)t.style.transform=`translate(${o.x}%,${o.y}%)`;
+  const st=document.getElementById('ovstage');if(st)st.classList.toggle('aligned',snap);
+  const m=document.getElementById('ovmsg');if(m)m.textContent=snap?'✅ Lined up! Read the letters under the dots, top to bottom.':'Drag the transparent dots sheet (all dots move together) until it sits exactly on the text.'});
+['pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev,()=>{if(drag&&ovAligned(OV[drag.c])&&navigator.vibrate)try{navigator.vibrate(60)}catch(_){}drag=null}));
 document.addEventListener('input',e=>{if(e.target.id!=='ov-op')return;const o=OV[e.target.dataset.c];if(!o)return;o.op=+e.target.value;const t=document.getElementById('ovtop');if(t)t.style.opacity=o.op});
 
+const QCOL=['#E8590C','#1C7ED6','#2B8A3E','#AE3EC9','#C92A2A','#0C8599','#E67700','#5F3DC4','#D6336C','#2F9E44','#1971C2','#F08C00','#862E9C','#0B7285','#A61E4D','#364FC7'];
 /* track scheduler: every team visits every country once; per stop, teams at a country <= its game sets */
 function scheduleTracks(){
   const C=S.countries,n=C.length,T=S.teams.length,cap=C.map(c=>Math.max(1,+c.sets||1));
@@ -789,11 +844,14 @@ function scheduleTracks(){
 async function loadStarter(){
   const res=await fetch('starter-pack.json?v='+Date.now());if(!res.ok)throw new Error('starter-pack.json not found next to index.html');
   const P=await res.json();
-  await w('progress',null);await w('countries',null);await w('teams',null);await w('images',null);
+  const keepAud=Object.fromEntries(S.countries.filter(c=>c.audV).map(c=>[c.id,c.audV]));
+  const packIds=new Set(P.countries.map(c=>c.id));
+  for(const c of S.countries){await wb(`images/${c.id}`,null);if(!packIds.has(c.id))await wb(`images/a_${c.id}`,null)}
+  await w('progress',null);await w('countries',null);await w('teams',null);
   const ver=Date.now();
   for(let i=0;i<P.countries.length;i++){const c=P.countries[i];const imgs=(c.photos||[]).map(k=>P.photos[k]).filter(Boolean);
     if(imgs.length)await wb(`images/${c.id}`,imgs);
-    await w(`countries/${c.id}`,{name:c.name,flag:c.flag,code:c.code,points:c.points||100,clue:c.clue||'',answers:c.answers||'',hint:c.hint||'',challenge:c.challenge||'',stampCode:c.stampCode,color:c.color,letter:c.letter||'',sets:c.sets||1,order:i,imgV:imgs.length?ver:null,imgN:imgs.length,overlay:!!c.overlay})}
+    await w(`countries/${c.id}`,{name:c.name,flag:c.flag,code:c.code,points:c.points||100,clue:c.clue||'',answers:c.answers||'',hint:c.hint||'',challenge:c.challenge||'',stampCode:c.stampCode,color:c.color,letter:c.letter||'',sets:c.sets||1,order:i,imgV:imgs.length?ver:null,imgN:imgs.length,overlay:!!c.overlay,grid:c.grid||'',audV:keepAud[c.id]||null})}
   const ids=P.countries.map(c=>c.id),n=ids.length;
   for(let k=0;k<P.teams.length;k++){const t=P.teams[k];await w(`teams/${t.id}`,{name:t.name,pin:t.pin,color:t.color,start:k%n,route:ids.map((_,i)=>ids[(k+i)%n]),created:ver+k})}
   if(P.config)await w('config',{...DEF,...P.config});
