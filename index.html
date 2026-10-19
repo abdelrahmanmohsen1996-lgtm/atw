@@ -285,6 +285,8 @@ function demoApi(){
     async set(p,v){const ks=p.split('/');let o=store;ks.slice(0,-1).forEach(k=>{if(typeof o[k]!=='object'||o[k]==null)o[k]={};o=o[k]});
       if(v==null)delete o[ks.at(-1)];else o[ks.at(-1)]=clone(v);fire()},
     async get(p){return clone(at(p))},
+    async blobGet(p){return clone(at(p))},
+    async blobSet(p,v){return this.set(p,v)},
     async signIn(){S.user={email:'demo'};S.canEdit=true},async signOut(){}
   };
 }
@@ -302,11 +304,18 @@ async function firebaseApi(cfg){
     sub(p,cb){d.onValue(d.ref(db,p),s=>cb(s.val()),e=>{atwShowError('Database read blocked on "'+p+'": '+(e&&e.message||e)+' — publish the rules from database.rules.json');S.ready=true;render(true)})},
     set(p,v){return v==null?d.remove(d.ref(db,p)):d.set(d.ref(db,p),v)},
     async get(p){return (await d.get(d.ref(db,p))).val()},
+    // photos & audio go over plain HTTPS (REST): fast, and works on networks that block live connections
+    async blobGet(p){const r=await fetch(`${cfg.databaseURL.replace(/\/$/,'')}/${p}.json`);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()},
+    async blobSet(p,v){const {auth}=await loadAuth();const u=auth.currentUser;if(!u)throw new Error('permission: not signed in');
+      const tok=await u.getIdToken();const r=await fetch(`${cfg.databaseURL.replace(/\/$/,'')}/${p}.json?auth=${encodeURIComponent(tok)}`,{method:v==null?'DELETE':'PUT',body:v==null?undefined:JSON.stringify(v)});
+      if(!r.ok){const t=await r.text().catch(()=>'');throw new Error((r.status===401||r.status===403?'permission ':'')+'HTTP '+r.status+' '+t.slice(0,120))}},
     loadAuth,
     async signIn(email,pw){const {a,auth}=await loadAuth();return a.signInWithEmailAndPassword(auth,email,pw)},
     async signOut(){const {a,auth}=await loadAuth();lsSet('atw-admin',null);return a.signOut(auth)}
   };
 }
+async function wb(p,v){try{S.err=null;await api.blobSet(p,v)}catch(e){
+  S.err=/permission/i.test(String(e&&e.message))?'Not saved: sign in to the Control room again, then retry.':'The file could not be uploaded ('+(e&&e.message||'network error')+'). Check the connection and try again.';render(true);throw e}}
 async function w(p,v){try{S.err=null;await api.set(p,v)}catch(e){
   S.err=/permission/i.test(String(e&&e.message))?'Not saved: only signed-in organisers can change the setup.':'Could not save. Check the connection and try again.';render(true);throw e}}
 
@@ -329,13 +338,13 @@ const saveProg=(id,p)=>w(`progress/${id}`,p);
 /* images: loaded on demand, cached per version */
 const normImgs=v=>typeof v==='string'?[v]:arr(v).filter(x=>typeof x==='string'&&x);
 function imgFor(c){if(!c||!c.imgV)return null;const k=c.id+'@'+c.imgV;
-  if(IMG[k]===undefined){IMG[k]='loading';api.get('images/'+c.id).then(v=>{IMG[k]=normImgs(v);render(true)}).catch(()=>{IMG[k]=[];render(true)})}
+  if(IMG[k]===undefined){IMG[k]='loading';api.blobGet('images/'+c.id).then(v=>{IMG[k]=normImgs(v);render(true)}).catch(()=>{IMG[k]=[];render(true)})}
   return IMG[k]}
 const OV={}; // overlay offsets per country
 /* ===== audio clue (stored at images/a_<countryId>, loaded only when that flyer is open) ===== */
 const AUD={};
 function audFor(c){if(!c||!c.audV)return null;const k=c.id+'@'+c.audV;
-  if(AUD[k]===undefined){AUD[k]='loading';api.get('images/a_'+c.id).then(async v=>{
+  if(AUD[k]===undefined){AUD[k]='loading';api.blobGet('images/a_'+c.id).then(async v=>{
       if(!v){AUD[k]='';render(true);return}
       try{const bl=await (await fetch(v)).blob();AUD[k]=URL.createObjectURL(bl)}catch(_){AUD[k]=v}render(true)}).catch(()=>{AUD[k]='';render(true)})}
   return AUD[k]}
@@ -343,6 +352,7 @@ function audioHTML(c){const src=audFor(c);if(src===null||src==='')return'';
   if(src==='loading')return `<div class="audiobox"><span class="ab-ic">🎧</span><span class="muted">Loading the music…</span></div>`;
   return `<div class="audiobox"><span class="ab-ic">🎧</span><div style="flex:1;min-width:0"><b>Listen to the clue</b><audio id="aud-${esc(c.id)}" controls preload="auto" playsinline src="${src}"></audio></div></div>`}
 function readAudio(file){return new Promise((res,rej)=>{if(file.size>2.5*1024*1024){rej(new Error('big'));return}
+  if(file.type&&!/^audio\//.test(file.type)&&!/\.(mp3|m4a|aac|wav|ogg)$/i.test(file.name)){rej(new Error('type'));return}
   const fr=new FileReader();fr.onerror=rej;fr.onload=()=>res({data:fr.result,name:file.name,size:file.size});fr.readAsDataURL(file)})}
 function photoHTML(c){const im=imgFor(c);if(im===null)return'';
   if(im==='loading')return `<div class="photo loading">Loading photo…</div>`;
@@ -546,7 +556,8 @@ function countryForm(c){c=c||{};const isNew=!c.id;
   <div class="field"><label for="c-challenge">Station challenge</label><textarea id="c-challenge" name="challenge" placeholder="What the team plays at this station">${esc(c.challenge)}</textarea></div>
   <div class="grid2"><div class="field"><label for="c-stamp">Stamp code (station operator keeps this)</label><input id="c-stamp" name="stampCode" required inputmode="numeric" value="${esc(c.stampCode)}" placeholder="4 digits"></div>
   <div class="field"><label for="c-color">Stamp ink</label><input id="c-color" name="color" type="color" value="${esc(c.color||'#B42340')}" style="height:44px;padding:4px"></div></div>
-  <div class="row"><button class="btn primary" ${S.busy?'disabled':''}>${S.busy?'Saving…':isNew?'Add country':'Save changes'}</button><button type="button" class="btn" data-act="cancel">Cancel</button></div></form>`}
+  ${S.err?`<div class="flash bad" role="alert">${esc(S.err)}</div>`:''}
+  <div class="row"><button class="btn primary" ${S.busy?'disabled':''}>${S.busy?esc(S.busyMsg||'Saving…'):isNew?'Add country':'Save changes'}</button><button type="button" class="btn" data-act="cancel">Cancel</button></div></form>`}
 
 function curAud(c){if(S.pendingAud!==undefined)return S.pendingAud?S.pendingAud.data:'';if(!c||!c.audV)return'';return audFor(c)}
 function audFormHTML(c){const cur=curAud(c);
@@ -695,7 +706,7 @@ document.addEventListener('click',async e=>{
   if(a==='resetteam'){await w(`progress/${id}`,null);render(true);return}
   if(a==='sess'){await setSession(b.dataset.s);flash('good',b.dataset.s==='live'?'Session started: teams now see their first flyer.':'Session paused.');render(true);return}
   if(a==='resetall'){await w('progress',null);await setSession('waiting');flash('good','All progress cleared.');render(true);return}
-  if(a==='delcountry'){await w(`countries/${id}`,null);await w(`images/${id}`,null);await w(`images/a_${id}`,null);render(true);return}
+  if(a==='delcountry'){await w(`countries/${id}`,null);await wb(`images/${id}`,null);await wb(`images/a_${id}`,null);render(true);return}
   if(a==='delteam'){await w(`teams/${id}`,null);await w(`progress/${id}`,null);render(true);return}
   if(a==='move'){const i=S.countries.findIndex(c=>c.id===id),j=i+(+b.dataset.d);if(j<0||j>=S.countries.length)return;
     const A=S.countries[i],B=S.countries[j];await w(`countries/${A.id}/order`,j);await w(`countries/${B.id}/order`,i);
@@ -726,19 +737,19 @@ document.addEventListener('submit',async e=>{
     if(!d.clue.trim()&&!hasImg&&!hasAud){S.err='Add a clue text, a photo or an audio clip so teams have something to solve.';render(true);return}
     S.busy=true;S.err=null;render(true);
     let imgV=old.imgV||null;
-    if(S.pendingImg!==undefined){if(S.pendingImg.length){await w(`images/${id}`,S.pendingImg);imgV=Date.now();IMG[id+'@'+imgV]=S.pendingImg}else{await w(`images/${id}`,null);imgV=null}}
+    if(S.pendingImg!==undefined){if(S.pendingImg.length){await wb(`images/${id}`,S.pendingImg);imgV=Date.now();IMG[id+'@'+imgV]=S.pendingImg}else{await wb(`images/${id}`,null);imgV=null}}
     let audV=old.audV||null;
-    if(S.pendingAud!==undefined){if(S.pendingAud){await w(`images/a_${id}`,S.pendingAud.data);audV=Date.now()}else{await w(`images/a_${id}`,null);audV=null}}
+    if(S.pendingAud!==undefined){if(S.pendingAud){S.busyMsg='Uploading audio ('+(S.pendingAud.size/1048576).toFixed(1)+' MB)…';render(true);await wb(`images/a_${id}`,S.pendingAud.data);audV=Date.now();AUD[id+'@'+audV]=S.pendingAud.data}else{await wb(`images/a_${id}`,null);audV=null}}
     const order=old.id?(old.order??S.countries.indexOf(old)):S.countries.length;
     await w(`countries/${id}`,{name:d.name.trim(),flag:d.flag.trim(),code:d.code.trim().toUpperCase(),points:Math.max(0,+d.points||0),clue:d.clue.trim(),answers:d.answers.trim(),hint:d.hint.trim(),challenge:d.challenge.trim(),stampCode:d.stampCode.trim(),color:d.color,letter:String(d.letter||'').trim().toUpperCase().slice(0,1),sets:Math.max(1,Math.min(20,Math.round(+d.sets||1))),order,imgV,imgN:hasImg?(S.pendingImg!==undefined?S.pendingImg.length:(old.imgN||1)):0,overlay:!!d.overlay,audV});
-    S.busy=false;S.editing=null;S.pendingImg=undefined;S.pendingAud=undefined;render();return}
+    S.busy=false;S.busyMsg='';S.editing=null;S.pendingImg=undefined;S.pendingAud=undefined;flash('good',`${d.name.trim()} saved${hasAud?' with audio':''}.`);render();return}
   if(kind==='team'){const id=f.dataset.id||rid();const old=S.teams.find(t=>t.id===id);const st=+d.start||0;
     const keep=old&&(+old.start||0)===st&&arr(old.route).length?arr(old.route):rotation(st).map(c=>c.id);
     await w(`teams/${id}`,{name:d.name.trim(),pin:d.pin.trim(),start:st,route:keep,color:d.color,created:(old||{}).created||Date.now()});S.editing=null;render();return}
   if(kind==='allsets'){const k=Math.max(1,Math.min(9,+d.sets||1));for(const c of S.countries){await w(`countries/${c.id}/sets`,k)}
     flash('good',`All ${S.countries.length} countries set to ${k} game set${k>1?'s':''}. Press Auto-arrange to update the tracks.`);render(true);return}
   if(kind==='config'){await w('config',{session:S.config.session||null,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim()});flash('good','Settings saved.');render(true);return}
-  }catch(err){S.busy=false;render(true)}
+  }catch(err){S.busy=false;S.busyMsg='';render(true)}
 });
 
 /* re-render that waited while audio was playing */
@@ -781,7 +792,7 @@ async function loadStarter(){
   await w('progress',null);await w('countries',null);await w('teams',null);await w('images',null);
   const ver=Date.now();
   for(let i=0;i<P.countries.length;i++){const c=P.countries[i];const imgs=(c.photos||[]).map(k=>P.photos[k]).filter(Boolean);
-    if(imgs.length)await w(`images/${c.id}`,imgs);
+    if(imgs.length)await wb(`images/${c.id}`,imgs);
     await w(`countries/${c.id}`,{name:c.name,flag:c.flag,code:c.code,points:c.points||100,clue:c.clue||'',answers:c.answers||'',hint:c.hint||'',challenge:c.challenge||'',stampCode:c.stampCode,color:c.color,letter:c.letter||'',sets:c.sets||1,order:i,imgV:imgs.length?ver:null,imgN:imgs.length,overlay:!!c.overlay})}
   const ids=P.countries.map(c=>c.id),n=ids.length;
   for(let k=0;k<P.teams.length;k++){const t=P.teams[k];await w(`teams/${t.id}`,{name:t.name,pin:t.pin,color:t.color,start:k%n,route:ids.map((_,i)=>ids[(k+i)%n]),created:ver+k})}
