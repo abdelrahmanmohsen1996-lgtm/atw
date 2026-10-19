@@ -21,7 +21,8 @@ function atwShowError(msg){window.ATW_ERRORS.push(msg);var b=document.getElement
 window.addEventListener('error',function(e){if(e.target&&e.target!==window)return;if(!e.message||/^Script error\.?$/i.test(e.message))return;if(e.filename&&e.filename.indexOf(location.origin)!==0)return;atwShowError((e.message||'Error')+(e.filename?' @ '+e.filename.split('/').pop()+':'+e.lineno:''))},true);
 window.addEventListener('unhandledrejection',function(e){atwShowError('Promise: '+(e.reason&&(e.reason.code||e.reason.message)||e.reason))});
 </script>
-<script src="lib/qrcode.js?v=5" defer></script>
+<link rel="modulepreload" href="lib/firebase-app.js">
+<link rel="modulepreload" href="lib/firebase-database.js">
 <script src="config.js?v=5" onerror="atwShowError('config.js could not be loaded. Is it in the same folder as index.html?')"></script>
 
 <style>
@@ -51,6 +52,8 @@ header.top{position:sticky;top:0;z-index:5;background:var(--bar);-webkit-backdro
 nav.tabs{display:flex;gap:4px;flex-wrap:wrap}
 nav.tabs button{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:7px 14px;font-weight:600;font-size:13px;cursor:pointer}
 nav.tabs button:hover{border-color:var(--navy)}
+nav.tabs .ts{display:none}
+@media (max-width:520px){nav.tabs{display:grid;grid-template-columns:repeat(4,1fr);width:100%;order:3}nav.tabs button{padding:8px 4px;font-size:13px}nav.tabs .tl{display:none}nav.tabs .ts{display:inline}}
 nav.tabs button[aria-current="true"]{background:var(--navy);border-color:var(--navy);color:var(--navy-ink)}
 .mode{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px;color:var(--muted)}
 .mode i{width:8px;height:8px;border-radius:50%;background:#7C879C;display:inline-block}
@@ -208,6 +211,24 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 .reveal-card .tile{--ts:120px;font-size:76px;animation:tflip 1s cubic-bezier(.2,1.4,.4,1)}
 .reveal-card h3{font-family:var(--display);font-weight:400;font-size:30px;text-transform:uppercase;margin:0}
 @media (prefers-reduced-motion:reduce){.tile.flip,.reveal-card .tile{animation:none}}
+.eq-big .tile{--ts:clamp(44px,12.5vw,66px)}
+.eq-big .eq-res{font-size:clamp(36px,10vw,56px)}
+.eq-big .eqp{padding-block:26px}
+.wonlist{display:flex;flex-wrap:wrap;gap:12px}
+.won{display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:12px;padding:6px 12px 6px 6px;font-weight:600}
+.won .tile{--ts:38px;background:linear-gradient(145deg,#FFF9EC,#F1E3BF);border-color:#E9DDBF}
+.pulse{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--logic-hi);margin-right:6px;animation:pl 1.4s infinite}
+@keyframes pl{0%{box-shadow:0 0 0 0 rgba(30,180,75,.5)}100%{box-shadow:0 0 0 12px rgba(30,180,75,0)}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+.sessbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-radius:14px;padding:14px 16px;border:2px solid var(--line);background:var(--card)}
+.sessbar.live{border-color:var(--logic-hi);background:color-mix(in srgb,var(--logic-hi) 8%,var(--card))}
+.sessbar.paused{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card))}
+.sessbar .st{font-family:var(--display);font-size:24px;text-transform:uppercase;color:var(--navy);line-height:1}
+.sessbar .grow{flex:1 1 200px;min-width:0}
+.btn.go{background:var(--logic-hi);border-color:var(--logic-hi);color:#fff;font-size:16px;padding:12px 22px}
+.audiobox{display:flex;gap:12px;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px}
+.audiobox .ab-ic{font-size:30px;line-height:1}
+.audiobox audio{width:100%;margin-top:6px;display:block}
 .empty{text-align:center;padding:36px 18px;display:grid;gap:8px;justify-items:center}
 .empty .big{font-family:var(--display);font-size:26px;font-weight:400;text-transform:uppercase}
 .qrbox{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -268,20 +289,22 @@ function demoApi(){
   };
 }
 async function firebaseApi(cfg){
-  const app=await import('./lib/firebase-app.js');
-  const d=await import('./lib/firebase-database.js');
-  const a=await import('./lib/firebase-auth.js');
+  const [app,d]=await Promise.all([import('./lib/firebase-app.js'),import('./lib/firebase-database.js')]);
   try{d.forceLongPolling()}catch(e){} // WebSockets are blocked on some networks; long-polling connects instantly
-  const fa=app.initializeApp(cfg);const db=d.getDatabase(fa);const auth=a.getAuth(fa);
-  a.onAuthStateChanged(auth,u=>{S.user=u?{email:u.email}:null;S.canEdit=!!u;render(true)});
+  const fa=app.initializeApp(cfg);const db=d.getDatabase(fa);
+  // sign-in code (150 KB) loads only for organisers: when the Control room is opened or this device signed in before
+  let authP=null;const loadAuth=()=>authP||(authP=import('./lib/firebase-auth.js').then(a=>{const auth=a.getAuth(fa);
+    a.onAuthStateChanged(auth,u=>{S.user=u?{email:u.email}:null;S.canEdit=!!u;lsSet('atw-admin',u?'1':null);render(true)});return{a,auth}}));
+  if(lsGet('atw-admin')||S.view==='control')loadAuth();
   d.onValue(d.ref(db,'.info/connected'),s=>{S.mode=s.val()?'live':'offline';render(true)});
   return{
     mode:'live',
     sub(p,cb){d.onValue(d.ref(db,p),s=>cb(s.val()),e=>{atwShowError('Database read blocked on "'+p+'": '+(e&&e.message||e)+' — publish the rules from database.rules.json');S.ready=true;render(true)})},
     set(p,v){return v==null?d.remove(d.ref(db,p)):d.set(d.ref(db,p),v)},
     async get(p){return (await d.get(d.ref(db,p))).val()},
-    signIn(email,pw){return a.signInWithEmailAndPassword(auth,email,pw)},
-    signOut(){return a.signOut(auth)}
+    loadAuth,
+    async signIn(email,pw){const {a,auth}=await loadAuth();return a.signInWithEmailAndPassword(auth,email,pw)},
+    async signOut(){const {a,auth}=await loadAuth();lsSet('atw-admin',null);return a.signOut(auth)}
   };
 }
 async function w(p,v){try{S.err=null;await api.set(p,v)}catch(e){
@@ -309,6 +332,18 @@ function imgFor(c){if(!c||!c.imgV)return null;const k=c.id+'@'+c.imgV;
   if(IMG[k]===undefined){IMG[k]='loading';api.get('images/'+c.id).then(v=>{IMG[k]=normImgs(v);render(true)}).catch(()=>{IMG[k]=[];render(true)})}
   return IMG[k]}
 const OV={}; // overlay offsets per country
+/* ===== audio clue (stored at images/a_<countryId>, loaded only when that flyer is open) ===== */
+const AUD={};
+function audFor(c){if(!c||!c.audV)return null;const k=c.id+'@'+c.audV;
+  if(AUD[k]===undefined){AUD[k]='loading';api.get('images/a_'+c.id).then(async v=>{
+      if(!v){AUD[k]='';render(true);return}
+      try{const bl=await (await fetch(v)).blob();AUD[k]=URL.createObjectURL(bl)}catch(_){AUD[k]=v}render(true)}).catch(()=>{AUD[k]='';render(true)})}
+  return AUD[k]}
+function audioHTML(c){const src=audFor(c);if(src===null||src==='')return'';
+  if(src==='loading')return `<div class="audiobox"><span class="ab-ic">🎧</span><span class="muted">Loading the music…</span></div>`;
+  return `<div class="audiobox"><span class="ab-ic">🎧</span><div style="flex:1;min-width:0"><b>Listen to the clue</b><audio id="aud-${esc(c.id)}" controls preload="auto" playsinline src="${src}"></audio></div></div>`}
+function readAudio(file){return new Promise((res,rej)=>{if(file.size>2.5*1024*1024){rej(new Error('big'));return}
+  const fr=new FileReader();fr.onerror=rej;fr.onload=()=>res({data:fr.result,name:file.name,size:file.size});fr.readAsDataURL(file)})}
 function photoHTML(c){const im=imgFor(c);if(im===null)return'';
   if(im==='loading')return `<div class="photo loading">Loading photo…</div>`;
   if(!im.length)return'';const k=c.id+'@'+c.imgV;
@@ -319,26 +354,26 @@ function photoHTML(c){const im=imgFor(c);if(im===null)return'';
       ${im.slice(2).map((src,i)=>`<button type="button" class="photo" data-act="zoom" data-k="${esc(k)}" data-i="${i+2}"><img src="${src}" alt="Photo clue ${i+3}"><span>Tap to enlarge</span></button>`).join('')}</div>`}
   return `<div class="photos">${im.map((src,i)=>`<button type="button" class="photo" data-act="zoom" data-k="${esc(k)}" data-i="${i}"><img src="${src}" alt="Photo clue ${i+1}"><span>Tap to enlarge</span></button>`).join('')}</div>`}
 function compress(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onerror=rej;fr.onload=()=>{const im=new Image();im.onerror=()=>rej(new Error('bad image'));im.onload=()=>{
-  const max=1200;let{width:w0,height:h0}=im;const s=Math.min(1,max/Math.max(w0,h0));const cv=document.createElement('canvas');cv.width=Math.round(w0*s);cv.height=Math.round(h0*s);
+  const max=1000;let{width:w0,height:h0}=im;const s=Math.min(1,max/Math.max(w0,h0));const cv=document.createElement('canvas');cv.width=Math.round(w0*s);cv.height=Math.round(h0*s);
   const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(im,0,0,cv.width,cv.height);
-  let q=.8,out=cv.toDataURL('image/jpeg',q);while(out.length>450000&&q>.4){q-=.1;out=cv.toDataURL('image/jpeg',q)}res(out)};im.src=fr.result};fr.readAsDataURL(file)})}
+  let q=.8,out=cv.toDataURL('image/jpeg',q);while(out.length>220000&&q>.4){q-=.08;out=cv.toDataURL('image/jpeg',q)}res(out)};im.src=fr.result};fr.readAsDataURL(file)})}
 
 /* ================= render ================= */
-function render(keep){if(drag&&keep)return;
+function render(keep){if(drag&&keep)return;if(keep){const pl=document.querySelector('audio');if(pl&&!pl.paused&&!pl.ended){render.pending=true;return}}
   const app=document.getElementById('app');let kept=null;
   if(keep){kept={};app.querySelectorAll('input[id],textarea[id],select[id]').forEach(el=>{if(el.type!=='file'&&!el.dataset.track)kept[el.id]=el.value});
     app.querySelectorAll('input[type=checkbox][name]').forEach(el=>kept['__cb_'+el.name]=el.checked);
     const a=document.activeElement;kept.__f=a&&a.id;try{kept.__s=a&&a.selectionStart}catch(e){}}
   document.getElementById('brand').textContent=(S.config.title&&S.config.title!==DEF.title)?S.config.title:'Logic Events';
   document.title=S.config.title||DEF.title;
-  const tabs=[['play','Team play'],['board','Leaderboard'],['control','Control room']];
-  document.getElementById('tabs').innerHTML=tabs.map(([k,l])=>`<button data-act="view" data-v="${k}" aria-current="${S.view===k}">${l}</button>`).join('');
+  const tabs=[['play','Team play','Play'],['eq','Equation','Equation'],['board','Leaderboard','Board'],['control','Control room','Control']];
+  document.getElementById('tabs').innerHTML=tabs.map(([k,l,sh])=>`<button data-act="view" data-v="${k}" aria-current="${S.view===k}"><span class="tl">${l}</span><span class="ts">${sh}</span></button>`).join('');
   const m=document.getElementById('mode');const ML={live:'Live',offline:'Reconnecting',demo:'Demo · this device',connecting:'Connecting'};
   m.className='mode '+(S.mode==='live'?'live':S.mode==='demo'?'demo':'');m.innerHTML=`<i></i>${ML[S.mode]||''}`;
   let h=S.err?`<div class="flash bad" role="alert">${esc(S.err)}</div>`:'';
   if(S.err&&S.view==='play')setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),30);
   if(S.mode==='demo'&&S.view==='control')h+=`<div class="note"><b>Demo mode.</b> Everything saves on this device only. Paste your Firebase settings into config.js to make it live for all phones.</div>`;
-  h+=S.view==='board'?vBoard():S.view==='control'?vControl():vPlay();
+  h+=S.view==='board'?vBoard():S.view==='control'?vControl():S.view==='eq'?vEq():vPlay();
   app.innerHTML=h;
   if(S.view==='control'&&S.canEdit)drawQR();
   if(kept){for(const id in kept){if(id.startsWith('__cb_')){const el=app.querySelector(`input[type=checkbox][name="${id.slice(5)}"]`);if(el)el.checked=kept[id];continue}
@@ -346,7 +381,9 @@ function render(keep){if(drag&&keep)return;
     if(kept.__f){const el=document.getElementById(kept.__f);if(el){el.focus();try{if(kept.__s!=null)el.setSelectionRange(kept.__s,kept.__s)}catch(e){}}}}
 }
 function joinURL(){return location.href.split('#')[0]}
-function drawQR(){const el=document.getElementById('qr');if(!el||typeof window.qrcode!=='function')return;try{const q=window.qrcode(0,'M');q.addData(joinURL());q.make();el.innerHTML=q.createSvgTag({cellSize:4,margin:0,scalable:true});const sv=el.querySelector('svg');if(sv){sv.style.width='132px';sv.style.height='132px'}}catch(e){}}
+let qrLoading=false;
+function drawQR(){const el=document.getElementById('qr');if(!el)return;
+  if(typeof window.qrcode!=='function'){if(!qrLoading){qrLoading=true;const sc=document.createElement('script');sc.src='lib/qrcode.js';sc.onload=()=>drawQR();document.head.appendChild(sc)}return}try{const q=window.qrcode(0,'M');q.addData(joinURL());q.make();el.innerHTML=q.createSvgTag({cellSize:4,margin:0,scalable:true});const sv=el.querySelector('svg');if(sv){sv.style.width='132px';sv.style.height='132px'}}catch(e){}}
 
 function stampHTML(c,s,i,fresh){const rot=((i*37)%22)-11;
   return `<div class="stampmark${fresh?' stamp-in':''}" style="--rot:${rot}deg;--sc:${esc(c.color||'#B42340')}"><span class="flag">${esc(c.flag||'✈')}</span><span class="code">${esc(code3(c))}</span><span class="date">${esc(fmtTime(s.at))}</span><span class="pts">+${+s.points||0} PTS</span></div>`}
@@ -370,9 +407,17 @@ function equationHTML(t,big){const e=eqParts();const all=eqLetters();if(!all.len
     ${e.bot.length?`<div class="eq-frac">${topH}<div class="eq-bar"></div>${botH}</div>`:topH}${aftH}</div>`;
   return `<section class="panel eqp"><div class="spread"><div><span class="label">Collect the letters</span><h3>The equation</h3></div>${got===all.length?'<span class="eq-done">Complete</span>':`<span class="label">${got} / ${all.length} letters</span>`}</div>${body}
     <span class="label" style="text-align:center">Win a letter at each station when the operator stamps your passport</span></section>`}
+/* ===== session ===== */
+function sess(){const v=S.config.session;return v&&typeof v==='object'?v:{state:'waiting'}}
+const isLive=()=>sess().state==='live';
+async function setSession(state){const cur=sess();await w('config/session',{state,startedAt:state==='live'?(cur.startedAt||Date.now()):(state==='waiting'?null:cur.startedAt||null),changedAt:Date.now()})}
+function waitingHTML(paused){return `<section class="panel empty wait"><img src="assets/landmarks.png" alt="" width="380" height="247" style="width:min(380px,100%);height:auto">
+  <span class="label"><span class="pulse"></span> ${paused?'Game paused':'Checked in'}</span>
+  <div class="big">${paused?'The game is paused':'Get ready to travel'}</div>
+  <p class="muted">${paused?'The organiser paused the game. Your progress is saved; this screen continues by itself when the game resumes.':'Your first shipment flyer appears here as soon as the organiser starts the game. Keep this screen open.'}</p></section>`}
 function showReveal(c,letter,pts){const r=document.getElementById('reveal');
   r.innerHTML=`<div class="reveal-card" role="dialog" aria-modal="true"><span class="label" style="color:#BFD9E6">${esc(c.flag||'')} ${esc(c.name)} · +${pts} points</span>
-    <span class="tile">${esc(letter)}</span><h3>You won the letter ${esc(letter)}</h3><span class="label" style="color:#BFD9E6">Tap to continue</span></div>`;r.hidden=false}
+    <span class="tile">${esc(letter)}</span><h3>You won the letter ${esc(letter)}</h3><div class="row" style="justify-content:center"><button class="btn primary" data-act="view" data-v="eq">See the equation</button><button class="btn" data-act="closereveal">Continue</button></div></div>`;r.hidden=false}
 
 function passportHTML(t){const r=route(t),p=prog(t.id);
   return `<section class="panel"><div class="spread"><h3>Passport</h3><span class="label">${p.stamps.length} / ${r.length} stamps</span></div>
@@ -422,18 +467,20 @@ function vPlay(){
   }
   const p=prog(team.id),r=route(team),n=r.length;
   let h=`<div class="teamcard"><span class="dot" style="background:${esc(team.color)}"></span><span class="teamname">${esc(team.name)}</span>
-    <div class="stat"><span class="label">Stamps</span><b>${p.stamps.length}/${n}</b></div><div class="stat"><span class="label">Points</span><b>${score(team.id)}</b></div>
+    <div class="stat"><span class="label">Stamps</span><b>${p.stamps.length}/${n}</b></div><div class="stat"><span class="label">Points</span><b>${score(team.id)}</b></div>${eqLetters().length?`<div class="stat"><span class="label">Letters</span><b>${Math.min(teamLetters(team).length,eqLetters().length)}/${eqLetters().length}</b></div>`:''}
     <button class="btn small" data-act="leave">Switch team</button><div class="prog" role="progressbar" aria-label="Journey progress" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${p.stamps.length}"><i style="width:${n?Math.round(p.stamps.length/n*100):0}%"></i></div></div>`;
   const fl=S.flash?`<div class="flash ${S.flash.k}${S.flash.k==='bad'?' shake':''}" role="status" id="inline-flash">${esc(S.flash.m)}</div>`:'';
   if(S.flash&&(p.step>=n||!n))h+=fl;
   if(!n)return h+`<div class="panel empty"><div class="big">Cargo not loaded</div><p class="muted">No countries have been added yet.</p></div>`;
-  if(p.step>=n){h+=`<section class="panel empty"><img src="assets/landmarks.png" alt="" width="420" height="273" style="width:min(420px,100%);height:auto"><span class="label">All shipments delivered</span><div class="big" style="font-size:40px">Journey complete</div><p class="muted">${n} countries, ${score(team.id)} points. Head back to the organiser and check the leaderboard.</p></section>`;return h+equationHTML(team)+passportHTML(team)}
+  if(p.step>=n){h+=`<section class="panel empty"><img src="assets/landmarks.png" alt="" width="420" height="273" style="width:min(420px,100%);height:auto"><span class="label">All shipments delivered</span><div class="big" style="font-size:40px">Journey complete</div><p class="muted">${n} countries, ${score(team.id)} points. Head back to the organiser and check the leaderboard.</p></section>`;return h+passportHTML(team)}
+  if(!isLive())return h+waitingHTML(sess().state==='paused')+passportHTML(team);
   const c=r[p.step];
   if(p.phase==='flyer'){
     const hinted=p.hints.includes(c.id);
     h+=`<article class="flyer"><div class="band"><span>Shipment flyer</span><span>No. ${String(p.step+1).padStart(3,'0')} of ${String(n).padStart(3,'0')}</span></div>
       <div class="body"><span class="label">Destination: unknown · solve the clue</span>
       ${photoHTML(c)}
+      ${audioHTML(c)}
       ${c.clue?`<div class="clue">${esc(c.clue)}</div>`:''}
       ${c.hint?(hinted?`<div class="hint"><span class="label">Hint</span><div>${esc(c.hint)}</div></div>`:`<div><button class="btn small" data-act="hint">Open hint (−${+S.config.hintCost||0} pts)</button></div>`):''}
       ${fl}<form data-form="answer" class="row" style="align-items:flex-end"><div class="field" style="flex:1 1 220px"><label for="a-ans">Your answer: the country or the code word</label><input id="a-ans" name="ans" autocomplete="off" placeholder="Type the country"></div><button class="btn primary">Ship it</button></form>
@@ -448,9 +495,21 @@ function vPlay(){
         <div class="field"><label for="s-pts">Points earned (max ${+c.points||0})</label><input id="s-pts" name="pts" type="number" min="0" max="${+c.points||0}" value="${+c.points||0}"></div></div>
         <div><button class="btn primary">Stamp passport</button></div></form></div></article>`;
   }
-  return h+equationHTML(team)+passportHTML(team);
+  return h+passportHTML(team);
 }
 
+function vEq(){
+  if(!S.ready)return `<div class="panel empty"><div class="big">Loading</div></div>`;
+  const team=S.teams.find(t=>t.id===S.myTeam);
+  if(!team)return `<section class="panel empty"><div class="big">Check in first</div><p class="muted">Choose your team on the Team play tab to see your equation.</p><button class="btn primary" data-act="view" data-v="play">Go to Team play</button></section>`;
+  if(!eqLetters().length)return `<section class="panel empty"><div class="big">No equation in this game</div></section>`;
+  const won=teamLetters(team);
+  return `<div class="teamcard"><span class="dot" style="background:${esc(team.color)}"></span><span class="teamname">${esc(team.name)}</span>
+    <div class="stat"><span class="label">Letters</span><b>${Math.min(won.length,eqLetters().length)}/${eqLetters().length}</b></div></div>
+    <div class="eq-big">${equationHTML(team)}</div>
+    <section class="panel"><div class="spread"><h3>Letters won</h3><span class="label">${won.length}</span></div>
+    ${won.length?`<div class="wonlist">${won.map(x=>`<div class="won"><span class="tile">${esc(x.l)}</span><span>${x.c?esc((x.c.flag||'')+' '+x.c.name):''}</span></div>`).join('')}</div>`:'<p class="muted" style="margin:0">No letters yet. Win one at every station when the operator stamps your passport.</p>'}</section>`;
+}
 function vBoard(){
   if(!S.teams.length)return `<div class="panel empty"><div class="big">Leaderboard is empty</div><p class="muted">Teams appear here once the organiser adds them.</p></div>`;
   return `<div class="boardhead"><img class="wordmark" src="assets/atw-logo.png" alt="Around the World" width="200" height="52"><div style="text-align:right"><span class="label">Live standings</span><div class="label">${S.countries.length} countries · ${S.teams.length} teams</div></div></div>
@@ -475,6 +534,11 @@ function countryForm(c){c=c||{};const isNew=!c.id;
   <div class="field"><label for="c-clue">Flyer clue text</label><textarea id="c-clue" name="clue" placeholder="The riddle that points to this country. Optional if you add a photo.">${esc(c.clue)}</textarea></div>
   <div class="field"><label for="c-photo">Photo clues (up to 4: puzzle slide, grid, cipher, map piece…)</label>
     ${prev}${cur!=='loading'&&cur.length<4?`<input id="c-photo" type="file" accept="image/*" multiple>`:''}
+    </div>
+  <div class="field"><label for="c-audio">Audio clue (music or sound, MP3/M4A up to 2.5 MB)</label>
+    ${audFormHTML(c)}
+  </div>
+  <div class="field">
     <label class="row" style="gap:8px;font-size:14px;font-weight:500"><input type="checkbox" name="overlay" style="width:auto" ${c.overlay?'checked':''}> Overlay puzzle: photo 2 is laid over photo 1 and teams drag it to line up</label>
     <span class="muted" style="font-size:13px">Photos show in this order. Large photos are resized automatically.</span></div>
   <div class="field"><label for="c-answers">Accepted answers (comma separated)</label><input id="c-answers" name="answers" value="${esc(c.answers)}" placeholder="Leave empty to accept the country name, or type the code word, e.g. sushi"></div>
@@ -484,6 +548,11 @@ function countryForm(c){c=c||{};const isNew=!c.id;
   <div class="field"><label for="c-color">Stamp ink</label><input id="c-color" name="color" type="color" value="${esc(c.color||'#B42340')}" style="height:44px;padding:4px"></div></div>
   <div class="row"><button class="btn primary" ${S.busy?'disabled':''}>${S.busy?'Saving…':isNew?'Add country':'Save changes'}</button><button type="button" class="btn" data-act="cancel">Cancel</button></div></form>`}
 
+function curAud(c){if(S.pendingAud!==undefined)return S.pendingAud?S.pendingAud.data:'';if(!c||!c.audV)return'';return audFor(c)}
+function audFormHTML(c){const cur=curAud(c);
+  return `${cur==='loading'?'<span class="muted">Loading audio…</span>':cur?`<div class="row"><audio controls src="${cur}" style="flex:1;min-width:200px"></audio><button type="button" class="btn small danger" data-act="rmaud">Remove audio</button></div>`:'<span class="muted">No audio</span>'}
+    <input id="c-audio" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav">
+    <span class="muted" style="font-size:13px">Tip: use a 20–40 second clip so it loads fast on phones.</span>`}
 function eqCheckHTML(){const need={},have={};eqLetters().forEach(l=>need[l]=(need[l]||0)+1);
   S.countries.forEach(c=>{const l=String(c.letter||'').toUpperCase();if(l)(have[l]=have[l]||[]).push(c)});
   const keys=[...new Set([...Object.keys(need),...Object.keys(have)])].sort();if(!keys.length)return'';
@@ -510,6 +579,11 @@ function vControl(){
   if(!S.ready)return `<div class="panel empty"><div class="big">Loading</div></div>`;
   if(!S.canEdit)return vLogin();
   const E=S.editing;
+  const ss=sess(),checked=S.teams.length;
+  const sessbar=`<div class="sessbar ${ss.state}"><div class="grow"><span class="label">Game session</span>
+    <div class="st">${ss.state==='live'?'<span class="pulse"></span>Live':ss.state==='paused'?'Paused':'Not started'}</div>
+    <div class="muted" style="font-size:13px">${ss.state==='live'?`Started ${fmtTime(ss.startedAt)}. Teams see their flyers.`:ss.state==='paused'?'Teams see a "game paused" screen. Progress is kept.':'Teams can check in now, but no clue shows until you press Start.'}</div></div>
+    ${ss.state==='live'?`<button class="btn" data-act="sess" data-s="paused">Pause</button>`:`<button class="btn go" data-act="sess" data-s="live">${ss.state==='paused'?'Resume session':'▶ Start session'}</button>`}</div>`;
   const live=S.teams.length?`<div class="tbl"><table><thead><tr><th>Team</th><th>PIN</th><th>Status</th><th>Where</th><th>Stamps</th><th>Points</th><th></th></tr></thead><tbody>
     ${ranked().map(({t,p,score:sc})=>{const st=statusOf(t);return `<tr><td><span class="row" style="gap:8px;flex-wrap:nowrap"><span class="dot" style="background:${esc(t.color)}"></span><b>${esc(t.name)}</b></span></td>
     <td style="font-family:var(--mono)">${esc(t.pin)}</td><td><span class="chip ${st.chip}">${st.txt}</span></td><td>${esc(st.where)}</td><td class="num">${p.stamps.length}/${S.countries.length}</td><td class="num">${sc}</td>
@@ -518,7 +592,7 @@ function vControl(){
     :`<p class="muted">Add teams below to start tracking.</p>`;
   const countries=`<section class="panel"><div class="spread"><div><span class="label">Route</span><h2>Countries</h2></div>${E==='c-new'?'':`<button class="btn primary" data-act="edit" data-e="c-new">Add country</button>`}</div>
     ${E==='c-new'?countryForm():''}
-    ${S.countries.length?S.countries.map((c,i)=>E==='c-'+c.id?countryForm(c):`<div class="item"><span class="fl">${esc(c.flag||'✈')}</span><div style="min-width:0"><h3>${i+1}. ${esc(c.name)} <span class="label">· ${esc(code3(c))} · ${+c.points||0} pts ${c.letter?`· letter <b style="color:var(--navy)">${esc(c.letter)}</b> `:''}· ${Math.max(1,+c.sets||1)} set${(+c.sets||1)>1?'s':''} · code ${esc(c.stampCode||'—')}${c.imgV?` · ${c.imgN||1} photo${(c.imgN||1)>1?'s':''}${c.overlay?' (overlay)':''}`:''}</span></h3>${c.clue?`<p>${esc(c.clue)}</p>`:''}${c.challenge?`<p><b>Station:</b> ${esc(c.challenge)}</p>`:''}</div>
+    ${S.countries.length?S.countries.map((c,i)=>E==='c-'+c.id?countryForm(c):`<div class="item"><span class="fl">${esc(c.flag||'✈')}</span><div style="min-width:0"><h3>${i+1}. ${esc(c.name)} <span class="label">· ${esc(code3(c))} · ${+c.points||0} pts ${c.letter?`· letter <b style="color:var(--navy)">${esc(c.letter)}</b> `:''}· ${Math.max(1,+c.sets||1)} set${(+c.sets||1)>1?'s':''} · code ${esc(c.stampCode||'—')}${c.audV?' · 🎧 audio':''}${c.imgV?` · ${c.imgN||1} photo${(c.imgN||1)>1?'s':''}${c.overlay?' (overlay)':''}`:''}</span></h3>${c.clue?`<p>${esc(c.clue)}</p>`:''}${c.challenge?`<p><b>Station:</b> ${esc(c.challenge)}</p>`:''}</div>
       <div class="acts"><button class="btn small" data-act="move" data-id="${c.id}" data-d="-1" ${i===0?'disabled':''} aria-label="Move up">↑</button><button class="btn small" data-act="move" data-id="${c.id}" data-d="1" ${i===S.countries.length-1?'disabled':''} aria-label="Move down">↓</button>
       <button class="btn small" data-act="edit" data-e="c-${c.id}">Edit</button>${armBtn('dc-'+c.id,'delcountry','Delete',`data-id="${c.id}"`)}</div></div>`).join(''):(E==='c-new'?'':`<div class="note">No countries yet. Each country is one shipment flyer: a text and/or photo clue, the accepted answers, the station challenge and a stamp code.</div>`)}</section>`;
   const teams=`<section class="panel"><div class="spread"><div><span class="label">Crews</span><h2>Teams</h2></div>${E==='t-new'?'':`<button class="btn primary" data-act="edit" data-e="t-new">Add team</button>`}</div>
@@ -561,7 +635,7 @@ function vControl(){
     <div class="spread note"><span><b>Logic starter pack:</b> 8 countries with clues (your deck puzzles included), station games, stamp codes and 8 teams with tracks. Replaces the current countries, teams and progress.</span>${armBtn('starter','starter','Load starter pack')}</div></section>`;
   const join=`<section class="panel"><div class="spread"><div><span class="label">Boarding</span><h2>Team join link</h2></div>${S.mode==='live'?`<button class="btn small" data-act="logout">Sign out ${esc(S.user&&S.user.email||'')}</button>`:''}</div>
     <div class="qrbox"><div id="qr"></div><div style="display:grid;gap:8px;min-width:0;flex:1 1 220px"><span class="muted">Teams scan this, pick their team and enter their PIN. No account needed.</span><code>${esc(joinURL())}</code><div><button class="btn small" data-act="copy">Copy link</button></div></div></div></section>`;
-  return `<section class="panel"><div class="spread"><div><span class="label">Live operations</span><h2>Control room</h2></div><button class="btn small" data-act="view" data-v="board">Open leaderboard</button></div>${live}</section>${join}${tracks}${countries}${teams}${settings}`;
+  return `<section class="panel"><div class="spread"><div><span class="label">Live operations</span><h2>Control room</h2></div><button class="btn small" data-act="view" data-v="board">Open leaderboard</button></div>${sessbar}${live}</section>${join}${tracks}${countries}${teams}${settings}`;
 }
 
 /* ================= actions ================= */
@@ -576,6 +650,7 @@ document.addEventListener('change',async e=>{
   if(e.target.dataset&&e.target.dataset.track){const tid=e.target.dataset.track;const t=S.teams.find(x=>x.id===tid);if(!t)return;
     const r=route(t).map(c=>c.id);const i=+e.target.dataset.i,nv=e.target.value,j=r.indexOf(nv);if(j>-1)r[j]=r[i];r[i]=nv;
     try{await w(`teams/${tid}/route`,r)}catch(_){}return}
+  if(e.target.id==='c-audio'&&e.target.files.length){try{S.pendingAud=await readAudio(e.target.files[0]);S.err=null}catch(err){S.err=err&&err.message==='big'?'That audio file is bigger than 2.5 MB. Trim it to a 20–40 second clip (or export as MP3 at 128 kbps) and try again.':'That file could not be read as audio.'}render(true);return}
   if(e.target.id!=='c-photo'||!e.target.files.length)return;
   const base=curImgs(editingCountry());if(base==='loading')return;const list=[...base];
   try{for(const f of [...e.target.files]){if(list.length>=4)break;list.push(await compress(f))}S.pendingImg=list;S.err=null;render(true)}
@@ -588,13 +663,14 @@ document.addEventListener('click',async e=>{
   const a=b.dataset.act,id=b.dataset.id;
   if(a!=='arm')S.armed=null;
   try{
-  if(a==='view'){S.view=b.dataset.v;lsSet('atw-view',S.view);S.flash=null;history.replaceState(null,'','#'+S.view);render();return}
+  if(a==='view'){document.getElementById('reveal').hidden=true;S.view=b.dataset.v;if(S.view==='control'&&api&&api.loadAuth)api.loadAuth();lsSet('atw-view',S.view);S.flash=null;history.replaceState(null,'','#'+S.view);render();return}
   if(a==='zoom'){const l=IMG[b.dataset.k],src=Array.isArray(l)?l[+b.dataset.i]:null;if(src){document.getElementById('zoomimg').src=src;document.getElementById('zoom').hidden=false}return}
   if(a==='pick'){S.pick=id;S.flash=null;render();setTimeout(()=>document.getElementById('j-pin')?.focus(),0);return}
   if(a==='leave'){S.myTeam=null;S.pick=null;lsSet('atw-team',null);render();return}
   if(a==='arm'){S.armed=b.dataset.key;render(true);return}
-  if(a==='edit'){S.editing=b.dataset.e;S.pendingImg=undefined;render();return}
-  if(a==='cancel'){S.editing=null;S.pendingImg=undefined;render();return}
+  if(a==='edit'){S.editing=b.dataset.e;S.pendingImg=undefined;S.pendingAud=undefined;render();return}
+  if(a==='cancel'){S.editing=null;S.pendingImg=undefined;S.pendingAud=undefined;render();return}
+  if(a==='rmaud'){S.pendingAud=null;render(true);return}
   if(a==='rmimg'){const base=curImgs(editingCountry());if(base==='loading')return;S.pendingImg=base.filter((_,i)=>i!==+b.dataset.i);render(true);return}
   if(a==='ovreset'){OV[id]={x:24,y:24,op:.6};render(true);return}
   if(a==='copy'){try{await navigator.clipboard.writeText(joinURL());flash('good','Link copied.')}catch(err){flash('bad','Copy failed. Select the link and copy it.')}render(true);return}
@@ -617,8 +693,9 @@ document.addEventListener('click',async e=>{
     if(p.phase==='travel'){p.phase='flyer'}else if(p.stamps.length){p.stamps=p.stamps.slice(0,-1);p.step=Math.max(0,p.step-1);p.phase='travel';p.finishedAt=null}
     await saveProg(id,p);return}
   if(a==='resetteam'){await w(`progress/${id}`,null);render(true);return}
-  if(a==='resetall'){await w('progress',null);flash('good','All progress cleared.');render(true);return}
-  if(a==='delcountry'){await w(`countries/${id}`,null);await w(`images/${id}`,null);render(true);return}
+  if(a==='sess'){await setSession(b.dataset.s);flash('good',b.dataset.s==='live'?'Session started: teams now see their first flyer.':'Session paused.');render(true);return}
+  if(a==='resetall'){await w('progress',null);await setSession('waiting');flash('good','All progress cleared.');render(true);return}
+  if(a==='delcountry'){await w(`countries/${id}`,null);await w(`images/${id}`,null);await w(`images/a_${id}`,null);render(true);return}
   if(a==='delteam'){await w(`teams/${id}`,null);await w(`progress/${id}`,null);render(true);return}
   if(a==='move'){const i=S.countries.findIndex(c=>c.id===id),j=i+(+b.dataset.d);if(j<0||j>=S.countries.length)return;
     const A=S.countries[i],B=S.countries[j];await w(`countries/${A.id}/order`,j);await w(`countries/${B.id}/order`,i);
@@ -633,6 +710,7 @@ document.addEventListener('submit',async e=>{
   if(kind==='login'){try{await api.signIn(d.email.trim(),d.pw);S.flash=null;render()}catch(err){flash('bad','Email or password is wrong.');render(true)}return}
   if(kind==='join'){const t=S.teams.find(x=>x.id===S.pick);if(!t)return;
     if(String(d.pin).trim()===String(t.pin).trim()){S.myTeam=t.id;lsSet('atw-team',t.id);S.flash=null;render()}else{flash('bad','That PIN does not match. Ask your organiser.');render(true)}return}
+  if(kind==='answer'&&!isLive())return;
   if(kind==='answer'){const t=S.teams.find(x=>x.id===S.myTeam);const p=prog(t.id),c=route(t)[p.step];if(!c||!d.ans.trim())return;
     const list=[c.name,...String(c.answers||'').split(',')].map(norm).filter(Boolean);
     const ok=list.includes(norm(d.ans));
@@ -644,21 +722,27 @@ document.addEventListener('submit',async e=>{
     const pts=Math.max(0,Math.min(+c.points||0,Math.round(+d.pts||0)));flash('good',`Stamped: ${c.name}, +${pts} points${c.letter?` and the letter ${String(c.letter).toUpperCase()}`:''}.`);await doStamp(t,c,pts,'station');return}
   if(kind==='country'){const id=f.dataset.id||rid();const old=S.countries.find(c=>c.id===id)||{};
     const hasImg=S.pendingImg!==undefined?S.pendingImg.length>0:!!old.imgV;
-    if(!d.clue.trim()&&!hasImg){S.err='Add a clue text or a photo so teams have something to solve.';render(true);return}
+    const hasAud=S.pendingAud!==undefined?!!S.pendingAud:!!old.audV;
+    if(!d.clue.trim()&&!hasImg&&!hasAud){S.err='Add a clue text, a photo or an audio clip so teams have something to solve.';render(true);return}
     S.busy=true;S.err=null;render(true);
     let imgV=old.imgV||null;
     if(S.pendingImg!==undefined){if(S.pendingImg.length){await w(`images/${id}`,S.pendingImg);imgV=Date.now();IMG[id+'@'+imgV]=S.pendingImg}else{await w(`images/${id}`,null);imgV=null}}
+    let audV=old.audV||null;
+    if(S.pendingAud!==undefined){if(S.pendingAud){await w(`images/a_${id}`,S.pendingAud.data);audV=Date.now()}else{await w(`images/a_${id}`,null);audV=null}}
     const order=old.id?(old.order??S.countries.indexOf(old)):S.countries.length;
-    await w(`countries/${id}`,{name:d.name.trim(),flag:d.flag.trim(),code:d.code.trim().toUpperCase(),points:Math.max(0,+d.points||0),clue:d.clue.trim(),answers:d.answers.trim(),hint:d.hint.trim(),challenge:d.challenge.trim(),stampCode:d.stampCode.trim(),color:d.color,letter:String(d.letter||'').trim().toUpperCase().slice(0,1),sets:Math.max(1,Math.min(20,Math.round(+d.sets||1))),order,imgV,imgN:hasImg?(S.pendingImg!==undefined?S.pendingImg.length:(old.imgN||1)):0,overlay:!!d.overlay});
-    S.busy=false;S.editing=null;S.pendingImg=undefined;render();return}
+    await w(`countries/${id}`,{name:d.name.trim(),flag:d.flag.trim(),code:d.code.trim().toUpperCase(),points:Math.max(0,+d.points||0),clue:d.clue.trim(),answers:d.answers.trim(),hint:d.hint.trim(),challenge:d.challenge.trim(),stampCode:d.stampCode.trim(),color:d.color,letter:String(d.letter||'').trim().toUpperCase().slice(0,1),sets:Math.max(1,Math.min(20,Math.round(+d.sets||1))),order,imgV,imgN:hasImg?(S.pendingImg!==undefined?S.pendingImg.length:(old.imgN||1)):0,overlay:!!d.overlay,audV});
+    S.busy=false;S.editing=null;S.pendingImg=undefined;S.pendingAud=undefined;render();return}
   if(kind==='team'){const id=f.dataset.id||rid();const old=S.teams.find(t=>t.id===id);const st=+d.start||0;
     const keep=old&&(+old.start||0)===st&&arr(old.route).length?arr(old.route):rotation(st).map(c=>c.id);
     await w(`teams/${id}`,{name:d.name.trim(),pin:d.pin.trim(),start:st,route:keep,color:d.color,created:(old||{}).created||Date.now()});S.editing=null;render();return}
   if(kind==='allsets'){const k=Math.max(1,Math.min(9,+d.sets||1));for(const c of S.countries){await w(`countries/${c.id}/sets`,k)}
     flash('good',`All ${S.countries.length} countries set to ${k} game set${k>1?'s':''}. Press Auto-arrange to update the tracks.`);render(true);return}
-  if(kind==='config'){await w('config',{title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim()});flash('good','Settings saved.');render(true);return}
+  if(kind==='config'){await w('config',{session:S.config.session||null,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim()});flash('good','Settings saved.');render(true);return}
   }catch(err){S.busy=false;render(true)}
 });
+
+/* re-render that waited while audio was playing */
+['pause','ended'].forEach(ev=>document.addEventListener(ev,()=>{if(render.pending){render.pending=false;setTimeout(()=>render(true),50)}},true));
 
 /* overlay drag */
 let drag=null;
@@ -723,11 +807,13 @@ function subscribe(){
   api.sub('countries',v=>{S.countries=Object.entries(v||{}).map(([id,c])=>({id,...c})).sort((a,b)=>(a.order??0)-(b.order??0));S.ready=true;render(true)});
   api.sub('teams',v=>{S.teams=Object.entries(v||{}).map(([id,t])=>({id,...t})).sort((a,b)=>(a.created||0)-(b.created||0));render(true)});
   api.sub('progress',v=>{S.progress=v||{};render(true)});
-  api.sub('config',v=>{S.config={...DEF,...(v||{})};render(true)});
+  api.sub('config',v=>{const was=isLive();S.config={...DEF,...(v||{})};
+    if(!was&&isLive()&&S.myTeam&&S.view!=='control'){flash('good','The game has started! Here is your first shipment.');S.view='play';try{navigator.vibrate&&navigator.vibrate(200)}catch(_){}}
+    render(true)});
 }
 async function boot(){
   const v=lsGet('atw-view');if(v)S.view=v;
-  const h=(location.hash||'').slice(1);if(['play','board','control'].includes(h))S.view=h;
+  const h=(location.hash||'').slice(1);if(['play','eq','board','control'].includes(h))S.view=h;
   render();
   const cfg=window.ATW_CONFIG||{};
   if(!window.ATW_CONFIG)atwShowError('config.js loaded but has no settings (window.ATW_CONFIG missing). Replace its content with the app version.');
