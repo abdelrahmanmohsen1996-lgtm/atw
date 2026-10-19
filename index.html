@@ -551,6 +551,9 @@ function vEq(){
     ${won.length?`<div class="wonlist">${won.map(x=>`<div class="won"><span class="tile">${esc(x.l)}</span><span>${x.c?esc((x.c.flag||'')+' '+x.c.name):''}</span></div>`).join('')}</div>`:'<p class="muted" style="margin:0">No letters yet. Win one at every station when the operator stamps your passport.</p>'}</section>`;
 }
 function vBoard(){
+  if(S.config.hideBoard&&!S.canEdit)return `<section class="panel empty"><img src="assets/landmarks.png" alt="" width="420" height="273" style="width:min(420px,100%);height:auto"><span class="label">Leaderboard</span><div class="big">Scores are hidden</div><p class="muted">The organiser will reveal the standings soon. Keep travelling!</p></section>`;
+  return (S.config.hideBoard?`<div class="flash bad" style="text-align:center">Hidden from teams and the projector. Only signed-in organisers see this. <button class="btn small" data-act="board" data-s="show">Show to everyone</button></div>`:'')+vBoardInner()}
+function vBoardInner(){
   if(!S.teams.length)return `<div class="panel empty"><div class="big">Leaderboard is empty</div><p class="muted">Teams appear here once the organiser adds them.</p></div>`;
   return `<div class="boardhead"><img class="wordmark" src="assets/atw-logo.png" alt="Around the World" width="200" height="52"><div style="text-align:right"><span class="label">Live standings</span><div class="label">${S.countries.length} countries · ${S.teams.length} teams</div></div></div>
   <div class="board">${ranked().map((x,i)=>{const r=route(x.t);return `<div class="lb${i===0&&x.score>0?' first':''}"><div class="rank">${x.score>0&&i<3?`<span class="medal">${['🥇','🥈','🥉'][i]}</span>`:i+1}</div>
@@ -626,6 +629,10 @@ function vControl(){
     <div class="st">${ss.state==='live'?'<span class="pulse"></span>Live':ss.state==='paused'?'Paused':'Not started'}</div>
     <div class="muted" style="font-size:13px">${ss.state==='live'?`Started ${fmtTime(ss.startedAt)}. Teams see their flyers.`:ss.state==='paused'?'Teams see a "game paused" screen. Progress is kept.':'Teams can check in now, but no clue shows until you press Start.'}</div></div>
     ${ss.state==='live'?`<button class="btn" data-act="sess" data-s="paused">Pause</button>`:`<button class="btn go" data-act="sess" data-s="live">${ss.state==='paused'?'Resume session':'▶ Start session'}</button>`}</div>`;
+  const hb=!!S.config.hideBoard;
+  const boardbar=`<div class="sessbar ${hb?'paused':''}"><div class="grow"><span class="label">Leaderboard</span><div class="st">${hb?'Hidden':'Visible'}</div>
+    <div class="muted" style="font-size:13px">${hb?'Teams and the projector see "Scores are hidden".':'Everyone can see the live standings.'}</div></div>
+    ${hb?`<button class="btn go" data-act="board" data-s="show">Show leaderboard</button>`:`<button class="btn" data-act="board" data-s="hide">Hide leaderboard</button>`}</div>`;
   const live=S.teams.length?`<div class="tbl"><table><thead><tr><th>Team</th><th>PIN</th><th>Status</th><th>Where</th><th>Stamps</th><th>Points</th><th></th></tr></thead><tbody>
     ${ranked().map(({t,p,score:sc})=>{const st=statusOf(t);return `<tr><td><span class="row" style="gap:8px;flex-wrap:nowrap"><span class="dot" style="background:${esc(t.color)}"></span><b>${esc(t.name)}</b></span></td>
     <td style="font-family:var(--mono)">${esc(t.pin)}</td><td><span class="chip ${st.chip}">${st.txt}</span></td><td>${esc(st.where)}</td><td class="num">${p.stamps.length}/${S.countries.length}</td><td class="num">${sc}</td>
@@ -681,7 +688,7 @@ function vControl(){
     <div class="spread note"><span><b>Logic starter pack:</b> the standard countries with their clues (grid, codes, cuisine, transparent sheet, music), station games, stamp codes and 8 teams with tracks. Uploaded audio is kept. Replaces the current countries, teams and progress.</span>${armBtn('starter','starter','Load starter pack')}</div></section>`;
   const join=`<section class="panel"><div class="spread"><div><span class="label">Boarding</span><h2>Team join link</h2></div>${S.mode==='live'?`<button class="btn small" data-act="logout">Sign out ${esc(S.user&&S.user.email||'')}</button>`:''}</div>
     <div class="qrbox"><div id="qr"></div><div style="display:grid;gap:8px;min-width:0;flex:1 1 220px"><span class="muted">Teams scan this, pick their team and enter their PIN. No account needed.</span><code>${esc(joinURL())}</code><div><button class="btn small" data-act="copy">Copy link</button></div></div></div></section>`;
-  return `<section class="panel"><div class="spread"><div><span class="label">Live operations</span><h2>Control room</h2></div><button class="btn small" data-act="view" data-v="board">Open leaderboard</button></div>${sessbar}${live}</section>${join}${tracks}${countries}${teams}${settings}`;
+  return `<section class="panel"><div class="spread"><div><span class="label">Live operations</span><h2>Control room</h2></div><button class="btn small" data-act="view" data-v="board">Open leaderboard</button></div>${sessbar}${boardbar}${live}</section>${join}${tracks}${countries}${teams}${settings}`;
 }
 
 /* ================= actions ================= */
@@ -742,6 +749,7 @@ document.addEventListener('click',async e=>{
     if(p.phase==='travel'){p.phase='flyer'}else if(p.stamps.length){p.stamps=p.stamps.slice(0,-1);p.step=Math.max(0,p.step-1);p.phase='travel';p.finishedAt=null}
     await saveProg(id,p);return}
   if(a==='resetteam'){await w(`progress/${id}`,null);render(true);return}
+  if(a==='board'){await w('config/hideBoard',b.dataset.s==='hide');flash('good',b.dataset.s==='hide'?'Leaderboard hidden from teams and the projector.':'Leaderboard is visible again.');render(true);return}
   if(a==='sess'){await setSession(b.dataset.s);flash('good',b.dataset.s==='live'?'Session started: teams now see their first flyer.':'Session paused.');render(true);return}
   if(a==='resetall'){await w('progress',null);await setSession('waiting');flash('good','All progress cleared.');render(true);return}
   if(a==='delcountry'){await w(`countries/${id}`,null);await wb(`images/${id}`,null);await wb(`images/a_${id}`,null);render(true);return}
@@ -796,7 +804,7 @@ document.addEventListener('submit',async e=>{
     S.busy=false;flash('good',`${N} teams created with PINs and tracks. Download the sheet (CSV) to print the PINs.`);render(true);return}
   if(kind==='allsets'){const k=Math.max(1,Math.min(9,+d.sets||1));for(const c of S.countries){await w(`countries/${c.id}/sets`,k)}
     flash('good',`All ${S.countries.length} countries set to ${k} game set${k>1?'s':''}. Press Auto-arrange to update the tracks.`);render(true);return}
-  if(kind==='config'){await w('config',{session:S.config.session||null,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim(),finalMessage:(d.finalMessage||'').trim()||DEF.finalMessage});flash('good','Settings saved.');render(true);return}
+  if(kind==='config'){await w('config',{session:S.config.session||null,hideBoard:!!S.config.hideBoard,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim(),finalMessage:(d.finalMessage||'').trim()||DEF.finalMessage});flash('good','Settings saved.');render(true);return}
   }catch(err){S.busy=false;S.busyMsg='';render(true)}
 });
 
