@@ -354,15 +354,23 @@ const saveProg=(id,p)=>w(`progress/${id}`,p);
 /* images: loaded on demand, cached per version */
 const normImgs=v=>typeof v==='string'?[v]:arr(v).filter(x=>typeof x==='string'&&x);
 function imgFor(c){if(!c||!c.imgV)return null;const k=c.id+'@'+c.imgV;
-  if(IMG[k]===undefined){IMG[k]='loading';api.blobGet('images/'+c.id).then(v=>{IMG[k]=normImgs(v);render(true)}).catch(()=>{IMG[k]=[];render(true)})}
+  if(IMG[k]===undefined){IMG[k]='loading';mediaGet('images/'+c.id,c.imgV).then(v=>{IMG[k]=normImgs(v);render(true)}).catch(()=>{IMG[k]=[];render(true)})}
   return IMG[k]}
 const OV={}; // overlay offsets per country, in % of the sheet size
 function ovStart(){const r=()=>(Math.random()<.5?-1:1)*(10+Math.random()*12);return{x:r(),y:r(),op:.9}}
 const ovAligned=o=>Math.abs(o.x)<.01&&Math.abs(o.y)<.01;
 /* ===== audio clue (stored at images/a_<countryId>, loaded only when that flyer is open) ===== */
 const AUD={};
+/* photos & audio are saved on the phone after the first download (per version),
+   so reloads and re-opened flyers cost nothing from the free Firebase allowance */
+async function mediaGet(path,ver){const key='https://atw.media/'+path+'?v='+ver;let cache=null;
+  try{cache=await caches.open('atw-media-v1');const hit=await cache.match(key);if(hit)return await hit.json()}catch(_){}
+  const v=await api.blobGet(path);
+  try{if(cache&&v!=null){await cache.put(key,new Response(JSON.stringify(v),{headers:{'Content-Type':'application/json'}}));
+    const ks=await cache.keys();for(const r of ks){const u=new URL(r.url);if(u.pathname==='/'+path&&u.search!=='?v='+ver)cache.delete(r)}}}catch(_){}
+  return v}
 function audFor(c){if(!c||!c.audV)return null;const k=c.id+'@'+c.audV;
-  if(AUD[k]===undefined){AUD[k]='loading';api.blobGet('images/a_'+c.id).then(async v=>{
+  if(AUD[k]===undefined){AUD[k]='loading';mediaGet('images/a_'+c.id,c.audV).then(async v=>{
       if(!v){AUD[k]='';render(true);return}
       try{const bl=await (await fetch(v)).blob();AUD[k]=URL.createObjectURL(bl)}catch(_){AUD[k]=v}render(true)}).catch(()=>{AUD[k]='';render(true)})}
   return AUD[k]}
