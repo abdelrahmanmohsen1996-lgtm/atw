@@ -48,12 +48,15 @@ header.top{position:sticky;top:0;z-index:5;background:var(--bar);-webkit-backdro
 .topin{max-width:880px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .brand{margin-right:auto;display:flex;align-items:center;gap:10px;min-width:0}
 .brand img{height:34px;width:auto;display:block}
+.brand img.clogo{height:34px;max-width:110px;object-fit:contain;border-left:1px solid var(--line);padding-left:10px}
+.cbig{display:block;max-height:70px;max-width:220px;width:auto;height:auto;object-fit:contain;margin:0 auto}
+.tc-top .cl{height:30px;max-width:90px;object-fit:contain}
 .brand .gname{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border-left:1px solid var(--line);padding-left:10px;line-height:1.3;max-width:16ch}
 nav.tabs{display:flex;gap:4px;flex-wrap:wrap}
 nav.tabs button{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:7px 14px;font-weight:600;font-size:13px;cursor:pointer}
 nav.tabs button:hover{border-color:var(--navy)}
 nav.tabs .ts{display:none}
-@media (max-width:520px){nav.tabs{display:grid;grid-template-columns:repeat(4,1fr);width:100%;order:3}nav.tabs button{padding:8px 4px;font-size:13px}nav.tabs .tl{display:none}nav.tabs .ts{display:inline}}
+@media (max-width:520px){nav.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%;order:3}nav.tabs button{padding:8px 4px;font-size:13px}nav.tabs .tl{display:none}nav.tabs .ts{display:inline}}
 nav.tabs button[aria-current="true"]{background:var(--navy);border-color:var(--navy);color:var(--navy-ink)}
 .mode{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px;color:var(--muted)}
 .mode i{width:8px;height:8px;border-radius:50%;background:#7C879C;display:inline-block}
@@ -253,6 +256,17 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 .audiobox .ab-ic{font-size:30px;line-height:1}
 .audiobox audio{width:100%;margin-top:6px;display:block}
 .finish{border:2px solid var(--logic-hi);background:linear-gradient(180deg,color-mix(in srgb,var(--logic-hi) 9%,var(--card)),var(--card))}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.tcard{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;display:grid;box-shadow:0 8px 24px rgba(8,82,113,.08);border-top:8px solid var(--tc);break-inside:avoid;page-break-inside:avoid}
+.tc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px dashed var(--line)}
+.tc-top img{height:30px;width:auto}.tc-top span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--muted)}
+.tc-body{display:grid;justify-items:center;gap:8px;padding:14px;text-align:center}
+.tc-name{font-family:var(--display);font-size:28px;text-transform:uppercase;color:var(--navy);display:flex;align-items:center;gap:8px;line-height:1}
+.tc-qr{background:#fff;line-height:0}
+.tc-pin b{display:block;font-family:var(--display);font-size:40px;color:var(--accent);letter-spacing:.08em;line-height:1}
+.tc-step{font-size:12px;color:var(--muted);max-width:30ch}
+.tc-foot{display:flex;gap:8px;justify-content:center;padding:0 14px 14px}
+@media print{header.top,.foot,.noprint,#atw-diag{display:none!important}body{background:#fff!important}.wrap{max-width:none;padding:0}.cards{grid-template-columns:repeat(2,1fr);gap:10mm}.tcard{box-shadow:none}}
 .empty{text-align:center;padding:36px 18px;display:grid;gap:8px;justify-items:center}
 .empty .big{font-family:var(--display);font-size:26px;font-weight:400;text-transform:uppercase}
 .qrbox{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -268,7 +282,7 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 </head>
 <body>
 <header class="top"><div class="topin">
-  <div class="brand"><img src="assets/atw-logo.png" alt="Around the World" width="130" height="34"><span class="gname" id="brand">Logic Events</span></div>
+  <div class="brand"><img src="assets/atw-logo.png" alt="Around the World" width="130" height="34"><img id="clogo" class="clogo" alt="" hidden><span class="gname" id="brand">Logic Events</span></div>
   <nav class="tabs" id="tabs"></nav>
   <span class="mode" id="mode"><i></i>Connecting</span>
 </div></header>
@@ -321,7 +335,7 @@ async function firebaseApi(cfg){
   // sign-in code (150 KB) loads only for organisers: when the Control room is opened or this device signed in before
   let authP=null;const loadAuth=()=>authP||(authP=import('./lib/firebase-auth.js').then(a=>{const auth=a.getAuth(fa);
     a.onAuthStateChanged(auth,u=>{S.user=u?{email:u.email}:null;S.canEdit=!!u;lsSet('atw-admin',u?'1':null);render(true)});return{a,auth}}));
-  if(lsGet('atw-admin')||S.view==='control')loadAuth();
+  if(lsGet('atw-admin')||S.view==='control'||S.view==='cards')loadAuth();
   d.onValue(d.ref(db,'.info/connected'),s=>{S.mode=s.val()?'live':'offline';render(true)});
   return{
     mode:'live',
@@ -417,24 +431,38 @@ function render(keep){if(drag&&keep)return;if(keep){const pl=document.querySelec
   if(keep){kept={};app.querySelectorAll('input[id],textarea[id],select[id]').forEach(el=>{if(el.type!=='file'&&!el.dataset.track)kept[el.id]=el.value});
     app.querySelectorAll('input[type=checkbox][name]').forEach(el=>kept['__cb_'+el.name]=el.checked);
     const a=document.activeElement;kept.__f=a&&a.id;try{kept.__s=a&&a.selectionStart}catch(e){}}
-  document.getElementById('brand').textContent=(S.config.title&&S.config.title!==DEF.title)?S.config.title:'Logic Events';
+  document.getElementById('brand').textContent=(S.config.title&&S.config.title!==DEF.title)?S.config.title:'Logic Events';applyBrand();
   document.title=S.config.title||DEF.title;
-  const tabs=[['play','Team play','Play'],['eq',isWords()?'Values':'Equation',isWords()?'Values':'Equation'],['board','Leaderboard','Board'],['control','Control room','Control']];
+  const tabs=[['play','Team play','Play'],['eq',isWords()?'Values':'Equation',isWords()?'Values':'Equation'],['board','Leaderboard','Board'],['control','Control room','Control']]
+    .filter(([k])=>k!=='control'||S.canEdit||lsGet('atw-admin')||S.view==='control'||S.view==='cards'); // players never see the Control tab
   document.getElementById('tabs').innerHTML=tabs.map(([k,l,sh])=>`<button data-act="view" data-v="${k}" aria-current="${S.view===k}"><span class="tl">${l}</span><span class="ts">${sh}</span></button>`).join('');
   const m=document.getElementById('mode');const ML={live:'Live',offline:'Reconnecting',demo:'Demo · this device',connecting:'Connecting'};
   m.className='mode '+(S.mode==='live'?'live':S.mode==='demo'?'demo':'');m.innerHTML=`<i></i>${ML[S.mode]||''}`;
   let h=S.err?`<div class="flash bad" role="alert">${esc(S.err)}</div>`:'';
   if(S.err&&S.view==='play')setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),30);
   if(S.mode==='demo'&&S.view==='control')h+=`<div class="note"><b>Demo mode.</b> Everything saves on this device only. Paste your Firebase settings into config.js to make it live for all phones.</div>`;
-  h+=S.view==='board'?vBoard():S.view==='control'?vControl():S.view==='eq'?vEq():vPlay();
+  h+=S.view==='board'?vBoard():S.view==='control'?vControl():S.view==='eq'?vEq():S.view==='cards'?vCards():vPlay();
   app.innerHTML=h;
   if(S.view==='control'&&S.canEdit)drawQR();
   if(kept){for(const id in kept){if(id.startsWith('__cb_')){const el=app.querySelector(`input[type=checkbox][name="${id.slice(5)}"]`);if(el)el.checked=kept[id];continue}
       if(id.startsWith('__'))continue;const el=document.getElementById(id);if(el)el.value=kept[id]}
     if(kept.__f){const el=document.getElementById(kept.__f);if(el){el.focus();try{if(kept.__s!=null)el.setSelectionRange(kept.__s,kept.__s)}catch(e){}}}}
 }
-function joinURL(){return location.href.split('#')[0]}
+/* ===== client branding (logo + colour) per event ===== */
+let CLOGO=null; // data URL of the client logo for the current version
+function clientLogo(){const v=S.config.clientLogoV;if(!v)return null;const k='logo@'+v;
+  if(CLOGO&&CLOGO.k===k)return CLOGO.src;if(!CLOGO||CLOGO.k!==k){CLOGO={k,src:null};mediaGet('images/clientlogo',v).then(d=>{if(CLOGO.k===k){CLOGO.src=d||null;render(true)}}).catch(()=>{})}return null}
+function applyBrand(){const src=clientLogo();const im=document.getElementById('clogo');if(im){if(src){im.src=src;im.hidden=false;im.alt=S.config.clientName||'Client logo'}else im.hidden=true}
+  const c=S.config.brandColor;document.documentElement.style.setProperty('--accent',c||'#E4572E');
+  const g=document.getElementById('brand');if(g){if(S.config.clientName)g.textContent=S.config.clientName;g.hidden=!!src}}
+const clientImg=cls=>{const s=clientLogo();return s?`<img class="${cls}" src="${s}" alt="${esc(S.config.clientName||'Client')}">`:''};
+function logoPNG(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onerror=rej;fr.onload=()=>{const im=new Image();im.onerror=()=>rej(new Error('bad'));im.onload=()=>{
+  const max=600,sc=Math.min(1,max/Math.max(im.width,im.height));const cv=document.createElement('canvas');cv.width=Math.round(im.width*sc);cv.height=Math.round(im.height*sc);
+  cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);res(cv.toDataURL('image/png'))};im.src=fr.result};fr.readAsDataURL(file)})}
+function joinURL(){return location.href.split('#')[0].split('?')[0]}
+function teamURL(t){return joinURL()+'?team='+encodeURIComponent(t.id)+'&pin='+encodeURIComponent(t.pin)}
 let qrLoading=false;
+function ensureQR(cb){if(typeof window.qrcode==='function')return cb&&cb();if(!qrLoading){qrLoading=true;const sc=document.createElement('script');sc.src='lib/qrcode.js';sc.onload=()=>{qrLoading=false;cb&&cb()};document.head.appendChild(sc)}}
 function drawQR(){const el=document.getElementById('qr');if(!el)return;
   if(typeof window.qrcode!=='function'){if(!qrLoading){qrLoading=true;const sc=document.createElement('script');sc.src='lib/qrcode.js';sc.onload=()=>drawQR();document.head.appendChild(sc)}return}try{const q=window.qrcode(0,'M');q.addData(joinURL());q.make();el.innerHTML=q.createSvgTag({cellSize:4,margin:0,scalable:true});const sv=el.querySelector('svg');if(sv){sv.style.width='132px';sv.style.height='132px'}}catch(e){}}
 
@@ -523,7 +551,7 @@ function vPlay(){
   if(!team){
     if(!S.teams.length)return `<div class="hero"><img class="land" src="assets/landmarks.png" alt="" width="520" height="338"></div><div class="panel empty"><div class="big">No teams yet</div><p class="muted">The organiser adds teams and countries in the Control room. This screen fills in as soon as they do.</p></div>`;
     const sel=S.teams.find(t=>t.id===S.pick);
-    return `<div class="hero"><img class="land" src="assets/landmarks.png" alt="" width="520" height="338"><p>Solve each shipment flyer, travel to the country, play its game and collect every stamp in your passport.</p></div>
+    return `<div class="hero">${clientImg('cbig')}<img class="land" src="assets/landmarks.png" alt="" width="520" height="338"><p>Solve each shipment flyer, travel to the country, play its game and collect every stamp in your passport.</p></div>
     ${installHTML()}
     <section class="panel"><div><span class="label">Check-in</span><h2>Choose your team</h2></div>
       <div class="teampick">${S.teams.map(t=>`<button data-act="pick" data-id="${t.id}" aria-pressed="${S.pick===t.id}"><span class="dot" style="background:${esc(t.color)}"></span>${esc(t.name)}</button>`).join('')}</div>
@@ -539,7 +567,7 @@ function vPlay(){
   const fl=S.flash?`<div class="flash ${S.flash.k}${S.flash.k==='bad'?' shake':''}" role="status" id="inline-flash">${esc(S.flash.m)}</div>`:'';
   if(S.flash&&(p.step>=n||!n))h+=fl;
   if(!n)return h+`<div class="panel empty"><div class="big">Cargo not loaded</div><p class="muted">No countries have been added yet.</p></div>`;
-  if(p.step>=n){h+=`<section class="panel empty finish"><img src="assets/landmarks.png" alt="" width="420" height="273" style="width:min(420px,100%);height:auto"><span class="label">All shipments delivered · ${n} countries · ${score(team.id)} points</span>
+  if(p.step>=n){h+=`<section class="panel empty finish">${clientImg('cbig')}<img src="assets/landmarks.png" alt="" width="420" height="273" style="width:min(420px,100%);height:auto"><span class="label">All shipments delivered · ${n} countries · ${score(team.id)} points</span>
     <div class="big" style="font-size:clamp(30px,9vw,44px);color:var(--navy)">${esc(S.config.finalMessage||DEF.finalMessage)}</div>
     <p class="muted">Well done, ${esc(team.name)}! Your journey around the world is complete.</p><button class="btn" data-act="view" data-v="eq">See your equation</button></section>`;return h+passportHTML(team)}
   if(!isLive())return h+waitingHTML(sess().state==='paused')+passportHTML(team);
@@ -568,6 +596,41 @@ function vPlay(){
   return h+passportHTML(team);
 }
 
+/* ===== team cards: QR + name + PIN ===== */
+function qrSVG(text,px){if(typeof window.qrcode!=='function')return'';try{const q=window.qrcode(0,'M');q.addData(text);q.make();return q.createSvgTag({cellSize:4,margin:2,scalable:true}).replace('<svg ','<svg style="width:'+px+'px;height:'+px+'px" ')}catch(_){return''}}
+function vCards(){
+  if(!S.canEdit)return vLogin();
+  if(typeof window.qrcode!=='function'){ensureQR(()=>render(true));return `<div class="panel empty"><div class="big">Preparing QR codes…</div></div>`}
+  return `<div class="spread noprint"><div><span class="label">Boarding passes</span><h2>Team cards</h2></div><div class="row">
+      <button class="btn" data-act="view" data-v="control">← Control room</button><button class="btn primary" data-act="printcards">Print / Save as PDF</button></div></div>
+    <div class="note noprint">Each QR opens the game and logs that team in straight away. On a phone, <b>Send</b> opens WhatsApp/Mail with the card image; on a computer it downloads the card. <b>Copy text</b> copies a ready message with the link and PIN.</div>
+    <div class="cards">${S.teams.map(t=>`<article class="tcard" style="--tc:${esc(t.color)}">
+      <div class="tc-top"><img src="assets/atw-logo.png" alt="Around the World" width="150" height="40">${clientImg('cl')||'<span>BOARDING PASS</span>'}</div>
+      <div class="tc-body"><div class="tc-name"><span class="dot" style="background:${esc(t.color)}"></span>${esc(t.name)}</div>
+        <div class="tc-qr">${qrSVG(teamURL(t),170)}</div>
+        <div class="tc-pin"><span class="label">Team PIN</span><b>${esc(t.pin)}</b></div>
+        <div class="tc-step">Scan with the phone camera · or open <b>${esc(joinURL().replace(/^https?:\/\//,''))}</b>, pick your team and enter the PIN</div></div>
+      <div class="tc-foot noprint"><button class="btn small primary" data-act="sendcard" data-id="${esc(t.id)}">Send</button><button class="btn small" data-act="copycard" data-id="${esc(t.id)}">Copy text</button></div>
+    </article>`).join('')}</div>`}
+async function cardPNG(t){const W=1080,H=1350,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  const load=src=>new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src});
+  x.fillStyle='#F3F6F8';x.fillRect(0,0,W,H);
+  try{const m=await load('assets/map.jpg');x.globalAlpha=.55;x.drawImage(m,0,0,W,W*m.height/m.width>H?H:W*m.height/m.width);x.globalAlpha=1}catch(_){}
+  x.fillStyle='#fff';x.beginPath();x.roundRect(60,60,W-120,H-120,36);x.fill();
+  x.fillStyle=t.color||'#085271';x.fillRect(60,60,W-120,22);
+  const cs=clientLogo();
+  try{const l=await load('assets/atw-logo.png');const lw=cs?440:560,lh=lw*l.height/l.width;x.drawImage(l,cs?110:(W-lw)/2,cs?150:130,lw,lh)}catch(_){}
+  if(cs){try{const c=await load(cs);const bh=110,bw=Math.min(330,bh*c.width/c.height),hh=bw*c.height/c.width;x.fillStyle='#D6DEE6';x.fillRect(585,130,2,130);x.drawImage(c,615+(330-bw)/2,195-hh/2,bw,hh)}catch(_){}}
+  x.fillStyle='#566778';x.font='600 30px "IBM Plex Mono", monospace';x.textAlign='center';x.fillText('BOARDING PASS',W/2,300);
+  x.fillStyle='#085271';x.font='72px Anton, Impact, "Arial Narrow", sans-serif';x.fillText(String(t.name).toUpperCase(),W/2,400);
+  const q=window.qrcode(0,'M');q.addData(teamURL(t));q.make();const n=q.getModuleCount(),size=560,cell=size/n,ox=(W-size)/2,oy=450;
+  x.fillStyle='#fff';x.fillRect(ox-20,oy-20,size+40,size+40);x.fillStyle='#0B2A3A';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))x.fillRect(ox+c*cell,oy+r*cell,Math.ceil(cell),Math.ceil(cell));
+  x.fillStyle='#566778';x.font='600 30px "IBM Plex Mono", monospace';x.fillText('TEAM PIN',W/2,1100);
+  x.fillStyle=S.config.brandColor||'#E4572E';x.font='96px Anton, Impact, sans-serif';x.fillText(String(t.pin),W/2,1200);
+  x.fillStyle='#566778';x.font='26px Figtree, Arial, sans-serif';x.fillText('Scan with your phone camera to join the game',W/2,1250);
+  return await new Promise(r=>cv.toBlob(r,'image/png'))}
+const cardText=t=>`✈️ Around the World — ${t.name}\nOpen your boarding pass: ${teamURL(t)}\nTeam PIN: ${t.pin}`;
 function vEq(){
   if(!S.ready)return `<div class="panel empty"><div class="big">Loading</div></div>`;
   const team=S.teams.find(t=>t.id===S.myTeam);
@@ -587,7 +650,7 @@ function vBoard(){
   return (S.config.hideBoard?`<div class="flash bad" style="text-align:center">Hidden from teams and the projector. Only signed-in organisers see this. <button class="btn small" data-act="board" data-s="show">Show to everyone</button></div>`:'')+vBoardInner()}
 function vBoardInner(){
   if(!S.teams.length)return `<div class="panel empty"><div class="big">Leaderboard is empty</div><p class="muted">Teams appear here once the organiser adds them.</p></div>`;
-  return `<div class="boardhead"><img class="wordmark" src="assets/atw-logo.png" alt="Around the World" width="200" height="52"><div style="text-align:right"><span class="label">Live standings</span><div class="label">${S.countries.length} countries · ${S.teams.length} teams</div></div></div>
+  return `<div class="boardhead"><div class="row"><img class="wordmark" src="assets/atw-logo.png" alt="Around the World" width="200" height="52">${clientImg('cbig')}</div><div style="text-align:right"><span class="label">Live standings</span><div class="label">${S.countries.length} countries · ${S.teams.length} teams</div></div></div>
   <div class="board">${ranked().map((x,i)=>{const r=route(x.t);return `<div class="lb${i===0&&x.score>0?' first':''}"><div class="rank">${x.score>0&&i<3?`<span class="medal">${['🥇','🥈','🥉'][i]}</span>`:i+1}</div>
     <div style="min-width:0"><div class="nm"><span class="dot" style="background:${esc(x.t.color)}"></span>${esc(x.t.name)}</div>
     <div class="pips">${r.map(c=>{const on=x.p.stamps.some(s=>s.countryId===c.id);return `<span class="pip${on?' on':''}" title="${on?esc(c.name):''}">${on?esc(c.flag||'✓'):''}</span>`}).join('')}</div></div>
@@ -713,6 +776,12 @@ function vControl(){
     <form data-form="config" class="grid2"><div class="field"><label for="g-title">Game title</label><input id="g-title" name="title" value="${esc(cfg.title)}"></div>
     <div class="field"><label for="g-hint">Hint costs (pts)</label><input id="g-hint" name="hintCost" type="number" min="0" value="${esc(cfg.hintCost)}"></div>
     <div class="field"><label for="g-wrong">Wrong guess costs (pts)</label><input id="g-wrong" name="wrongPenalty" type="number" min="0" value="${esc(cfg.wrongPenalty)}"></div>
+    <div class="field" style="grid-column:1/-1"><label>Client branding for this event</label>
+      <div class="row">${clientLogo()?`<img src="${clientLogo()}" alt="Client logo" style="height:56px;max-width:180px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px">`:'<span class="muted">No client logo</span>'}
+        <input id="g-logo" type="file" accept="image/*" style="flex:1 1 200px">${S.config.clientLogoV?'<button type="button" class="btn small danger" data-act="rmlogo">Remove logo</button>':''}</div>
+      <span class="muted" style="font-size:13px">Shows in the header, check-in screen, leaderboard, finish screen and team cards. PNG with transparent background looks best.</span></div>
+    <div class="field"><label for="g-cname">Client name (optional, shown in the header)</label><input id="g-cname" name="clientName" value="${esc(cfg.clientName||'')}" placeholder="e.g. Mars"></div>
+    <div class="field"><label for="g-bcol">Client colour for main buttons</label><div class="row"><input id="g-bcol" name="brandColor" type="color" value="${esc(cfg.brandColor||'#E4572E')}" style="height:44px;padding:4px;width:80px"><button type="button" class="btn small" data-act="resetcol">Logic default</button></div></div>
     <div class="field" style="grid-column:1/-1"><label for="g-final">Message when a team finishes all countries</label><input id="g-final" name="finalMessage" value="${esc(cfg.finalMessage||DEF.finalMessage)}"></div>
     <div class="field" style="grid-column:1/-1"><label for="g-mode">What teams collect at each station</label>
       <select id="g-mode" name="rewardMode"><option value="letters"${!isWords()?' selected':''}>Equation letters (default)</option><option value="words"${isWords()?' selected':''}>Custom values / phrases (one per country)</option></select></div>
@@ -730,7 +799,8 @@ function vControl(){
     <div class="spread note"><span>Clear every stamp and score before a new event. Countries and teams stay.</span>${armBtn('reset-all','resetall','Reset all progress')}</div>
     <div class="spread note"><span><b>Logic starter pack:</b> the standard countries with their clues (grid, codes, cuisine, transparent sheet, music), station games, stamp codes and 8 teams with tracks. Uploaded audio is kept. Replaces the current countries, teams and progress.</span>${armBtn('starter','starter','Load starter pack')}</div></section>`;
   const join=`<section class="panel"><div class="spread"><div><span class="label">Boarding</span><h2>Team join link</h2></div>${S.mode==='live'?`<button class="btn small" data-act="logout">Sign out ${esc(S.user&&S.user.email||'')}</button>`:''}</div>
-    <div class="qrbox"><div id="qr"></div><div style="display:grid;gap:8px;min-width:0;flex:1 1 220px"><span class="muted">Teams scan this, pick their team and enter their PIN. No account needed.</span><code>${esc(joinURL())}</code><div><button class="btn small" data-act="copy">Copy link</button></div></div></div></section>`;
+    <div class="qrbox"><div id="qr"></div><div style="display:grid;gap:8px;min-width:0;flex:1 1 220px"><span class="muted">Teams scan this, pick their team and enter their PIN. No account needed.</span><code>${esc(joinURL())}</code><div><button class="btn small" data-act="copy">Copy link</button></div></div></div>
+    ${S.teams.length?`<div class="spread note"><span><b>Team cards:</b> one QR per team with its name and PIN. Scanning it logs the team straight in. Print them, save as PDF, or send each card on WhatsApp.</span><button class="btn primary" data-act="view" data-v="cards">Open team cards</button></div>`:''}</section>`;
   return `<section class="panel"><div class="spread"><div><span class="label">Live operations</span><h2>Control room</h2></div><button class="btn small" data-act="view" data-v="board">Open leaderboard</button></div>${sessbar}${boardbar}${live}</section>${join}${tracks}${countries}${teams}${settings}`;
 }
 
@@ -746,6 +816,7 @@ document.addEventListener('change',async e=>{
   if(e.target.dataset&&e.target.dataset.track){const tid=e.target.dataset.track;const t=S.teams.find(x=>x.id===tid);if(!t)return;
     const r=route(t).map(c=>c.id);const i=+e.target.dataset.i,nv=e.target.value,j=r.indexOf(nv);if(j>-1)r[j]=r[i];r[i]=nv;
     try{await w(`teams/${tid}/route`,r)}catch(_){}return}
+  if(e.target.id==='g-logo'&&e.target.files.length){try{const d=await logoPNG(e.target.files[0]);await wb('images/clientlogo',d);const v=Date.now();await w('config/clientLogoV',v);CLOGO={k:'logo@'+v,src:d};flash('good','Client logo saved. The app is now branded.')}catch(err){flash('bad','That file could not be used as a logo. Try a PNG or JPG.')}render(true);return}
   if(e.target.id==='c-audio'&&e.target.files.length){try{S.pendingAud=await readAudio(e.target.files[0]);S.err=null}catch(err){S.err=err&&err.message==='big'?'That audio file is bigger than 2.5 MB. Trim it to a 20–40 second clip (or export as MP3 at 128 kbps) and try again.':'That file could not be read as audio.'}render(true);return}
   if(e.target.id!=='c-photo'||!e.target.files.length)return;
   const base=curImgs(editingCountry());if(base==='loading')return;const list=[...base];
@@ -759,7 +830,7 @@ document.addEventListener('click',async e=>{
   const a=b.dataset.act,id=b.dataset.id;
   if(a!=='arm')S.armed=null;
   try{
-  if(a==='view'){document.getElementById('reveal').hidden=true;S.view=b.dataset.v;if(S.view==='control'&&api&&api.loadAuth)api.loadAuth();lsSet('atw-view',S.view);S.flash=null;history.replaceState(null,'','#'+S.view);render();return}
+  if(a==='view'){document.getElementById('reveal').hidden=true;S.view=b.dataset.v;if((S.view==='control'||S.view==='cards')&&api&&api.loadAuth)api.loadAuth();lsSet('atw-view',S.view);S.flash=null;history.replaceState(null,'','#'+S.view);render();return}
   if(a==='zoom'){const l=IMG[b.dataset.k],src=Array.isArray(l)?l[+b.dataset.i]:null;if(src){document.getElementById('zoomimg').src=src;document.getElementById('zoom').hidden=false}return}
   if(a==='pick'){S.pick=id;S.flash=null;render();setTimeout(()=>document.getElementById('j-pin')?.focus(),0);return}
   if(a==='leave'){S.myTeam=null;S.pick=null;lsSet('atw-team',null);render();return}
@@ -793,6 +864,13 @@ document.addEventListener('click',async e=>{
     await saveProg(id,p);return}
   if(a==='resetteam'){await w(`progress/${id}`,null);render(true);return}
   if(a==='usewords'){await w('config/rewardMode',b.dataset.s);flash('good',b.dataset.s==='words'?'Custom values on.':'Back to equation letters.');render(true);return}
+  if(a==='rmlogo'){await wb('images/clientlogo',null);await w('config/clientLogoV',null);CLOGO=null;flash('good','Client logo removed.');render(true);return}
+  if(a==='resetcol'){await w('config/brandColor','');flash('good','Logic colours restored.');render(true);return}
+  if(a==='printcards'){window.print();return}
+  if(a==='copycard'){const t=S.teams.find(x=>x.id===id);if(!t)return;try{await navigator.clipboard.writeText(cardText(t));flash('good',`Message for ${t.name} copied. Paste it in WhatsApp.`)}catch(_){flash('bad','Copy failed on this browser.')}render(true);return}
+  if(a==='sendcard'){const t=S.teams.find(x=>x.id===id);if(!t)return;const blob=await cardPNG(t);const file=new File([blob],`${t.name.replace(/[^\w-]+/g,'_')}-boarding-pass.png`,{type:'image/png'});
+    try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text:cardText(t),title:t.name});return}}catch(e){if(e&&e.name==='AbortError')return}
+    const u=URL.createObjectURL(blob);const l=document.createElement('a');l.href=u;l.download=file.name;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),3000);flash('good',`${t.name} card downloaded.`);render(true);return}
   if(a==='board'){await w('config/hideBoard',b.dataset.s==='hide');flash('good',b.dataset.s==='hide'?'Leaderboard hidden from teams and the projector.':'Leaderboard is visible again.');render(true);return}
   if(a==='sess'){await setSession(b.dataset.s);flash('good',b.dataset.s==='live'?'Session started: teams now see their first flyer.':'Session paused.');render(true);return}
   if(a==='resetall'){await w('progress',null);await setSession('waiting');flash('good','All progress cleared.');render(true);return}
@@ -854,7 +932,7 @@ document.addEventListener('submit',async e=>{
     S.busy=false;flash('good',`${N} teams created with PINs and tracks. Download the sheet (CSV) to print the PINs.`);render(true);return}
   if(kind==='allsets'){const k=Math.max(1,Math.min(9,+d.sets||1));for(const c of S.countries){await w(`countries/${c.id}/sets`,k)}
     flash('good',`All ${S.countries.length} countries set to ${k} game set${k>1?'s':''}. Press Auto-arrange to update the tracks.`);render(true);return}
-  if(kind==='config'){await w('config',{session:S.config.session||null,hideBoard:!!S.config.hideBoard,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim(),rewardMode:d.rewardMode==='words'?'words':'letters',wordsTitle:(d.wordsTitle||'').trim()||DEF.wordsTitle,finalMessage:(d.finalMessage||'').trim()||DEF.finalMessage});flash('good','Settings saved.');render(true);return}
+  if(kind==='config'){await w('config',{session:S.config.session||null,hideBoard:!!S.config.hideBoard,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim(),rewardMode:d.rewardMode==='words'?'words':'letters',clientName:(d.clientName||'').trim(),brandColor:(d.brandColor&&d.brandColor.toLowerCase()!=='#e4572e')?d.brandColor:'',clientLogoV:S.config.clientLogoV||null,wordsTitle:(d.wordsTitle||'').trim()||DEF.wordsTitle,finalMessage:(d.finalMessage||'').trim()||DEF.finalMessage});flash('good','Settings saved.');render(true);return}
   }catch(err){S.busy=false;S.busyMsg='';render(true)}
 });
 
@@ -912,7 +990,7 @@ async function loadStarter(){
     await w(`countries/${c.id}`,{name:c.name,flag:c.flag,code:c.code,points:c.points||100,clue:c.clue||'',answers:c.answers||'',hint:c.hint||'',challenge:c.challenge||'',stampCode:c.stampCode,color:c.color,letter:c.letter||'',sets:c.sets||1,order:i,imgV:imgs.length?ver:null,imgN:imgs.length,overlay:!!c.overlay,grid:c.grid||'',audV:keepAud[c.id]||null})}
   const ids=P.countries.map(c=>c.id),n=ids.length;
   for(let k=0;k<P.teams.length;k++){const t=P.teams[k];await w(`teams/${t.id}`,{name:t.name,pin:t.pin,color:t.color,start:k%n,route:ids.map((_,i)=>ids[(k+i)%n]),created:ver+k})}
-  if(P.config)await w('config',{...DEF,...P.config});
+  if(P.config)await w('config',{...DEF,...P.config,clientLogoV:S.config.clientLogoV||null,clientName:S.config.clientName||'',brandColor:S.config.brandColor||'',hideBoard:!!S.config.hideBoard});
 }
 
 /* examples for demo mode */
@@ -932,7 +1010,9 @@ async function loadSample(){
 /* ================= boot ================= */
 function subscribe(){
   api.sub('countries',v=>{S.countries=Object.entries(v||{}).map(([id,c])=>({id,...c})).sort((a,b)=>(a.order??0)-(b.order??0));S.ready=true;render(true)});
-  api.sub('teams',v=>{S.teams=Object.entries(v||{}).map(([id,t])=>({id,...t})).sort((a,b)=>(a.created||0)-(b.created||0));render(true)});
+  api.sub('teams',v=>{S.teams=Object.entries(v||{}).map(([id,t])=>({id,...t})).sort((a,b)=>(a.created||0)-(b.created||0));
+    if(S.qrJoin){const t=S.teams.find(x=>x.id===S.qrJoin.team);if(t){if(String(t.pin)===String(S.qrJoin.pin)){S.myTeam=t.id;lsSet('atw-team',t.id);S.view='play';flash('good',`Welcome, ${t.name}! You are checked in.`)}else{S.pick=t.id;S.view='play'}S.qrJoin=null}}
+    render(true)});
   api.sub('progress',v=>{S.progress=v||{};render(true)});
   api.sub('config',v=>{const was=isLive();S.config={...DEF,...(v||{})};
     if(!was&&isLive()&&S.myTeam&&S.view!=='control'){flash('good','The game has started! Here is your first shipment.');S.view='play';try{navigator.vibrate&&navigator.vibrate(200)}catch(_){}}
@@ -940,7 +1020,8 @@ function subscribe(){
 }
 async function boot(){
   const v=lsGet('atw-view');if(v)S.view=v;
-  const h=(location.hash||'').slice(1);if(['play','eq','board','control'].includes(h))S.view=h;
+  const h=(location.hash||'').slice(1);if(['play','eq','board','control','cards'].includes(h))S.view=h;
+  try{const q=new URLSearchParams(location.search);if(q.get('team')){S.qrJoin={team:q.get('team'),pin:q.get('pin')||''};S.view='play';history.replaceState(null,'',location.pathname+'#play')}}catch(_){}
   render();
   const cfg=window.ATW_CONFIG||{};
   if(!window.ATW_CONFIG)atwShowError('config.js loaded but has no settings (window.ATW_CONFIG missing). Replace its content with the app version.');

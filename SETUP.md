@@ -30,6 +30,28 @@ To update later: repeat steps 2, 3 and 5.
 ## 3. Run an event
 **Fastest start:** Control room → Game settings → **Load starter pack**. It sets up 8 countries (clue, photos, answer, hint, station game, stamp code), 8 teams with PINs, and clash-free tracks. Then edit anything you like.
 
+**Quick teams:** Control room → Teams → enter the number of teams → **Create teams**. It makes Team 1…N with PINs and colours and arranges tracks. Download the sheet (CSV) to print the PINs.
+
+**Tap-to-cross grid (Japan):** edit a country → *Tap-to-cross letter grid*: one row per line, letters separated by spaces. Teams tap letters to cross them out and see the letters left.
+
+**Transparent sheet (France):** photo 1 = text, photo 2 = dots sheet, tick *Overlay puzzle*. Teams drag the whole dots sheet; it snaps and turns green when lined up. *Full screen* makes it bigger (turn the phone sideways).
+
+**Team cards (QR):** Control room → Team join link → **Open team cards**. One boarding pass per team with name, QR and PIN; the QR logs the team in directly. **Print / Save as PDF**, or **Send** each card (WhatsApp on phone) / **Copy text**.
+
+**Control room is hidden from players.** Organisers open it with the link ending in **#control** (bookmark it). After signing in once, the Control tab stays visible on that device.
+
+**Client branding:** Game settings → *Client branding* → upload the client logo (PNG), optional client name and button colour. Appears in the header, check-in, leaderboard, finish screen and team cards. *Remove logo* / *Logic default* to go back.
+
+**Custom values mode:** Game settings → *Values for this event* → paste `Value (Country)` lines → **Apply values**. Teams unlock a phrase per country instead of equation letters. **Back to equation letters** restores the default.
+
+**Start session:** teams can check in any time, but they only see a "Get ready" screen. Control room → **▶ Start session** sends every team its first flyer at the same moment. **Pause** freezes the game (progress is kept); **Reset all progress** also sets the session back to *Not started*.
+
+**Equation tab:** each team sees its equation on its own tab; letters appear only after they are won.
+
+**Audio clue:** edit a country → *Audio clue* → choose an MP3/M4A (max 2.5 MB; a 20–40 s clip is best). Teams get a play button on that country's flyer. Audio and photos load only when that flyer opens, so the app stays light.
+
+**Equation letters:** Game settings → set the equation (default `TW = C × C × C / L + V × U`). Edit each country → *Letter won here*. The check under the settings shows whether every letter in the equation is given by a country. The letter is awarded when the operator enters the stamp code, pops up on the team's phone and fills its tile in the equation.
+
 **Game sets:** edit a country → *Game sets* = how many teams can play that game at the same time. The Team tracks panel tells you if you have enough: each country needs at least (teams ÷ countries, rounded up) sets, e.g. 16 teams on 8 countries = 2 sets each.
 
 **Team tracks (tracking sheet):** Control room → *Team tracks*. Each row is one team's order of countries; the team's flyers follow that order. Red cells = more teams at a country at the same stop than it has game sets. **Auto-arrange** fixes clashes, **Download sheet (CSV)** gives you the sheet for Excel/printing.
