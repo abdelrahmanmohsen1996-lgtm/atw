@@ -217,8 +217,16 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 .reveal{position:fixed;inset:0;z-index:70;background:rgba(4,30,44,.93);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px;cursor:pointer}
 .reveal-card{display:grid;justify-items:center;gap:14px;text-align:center;color:#fff}
 .reveal-card .tile{--ts:120px;font-size:76px;animation:tflip 1s cubic-bezier(.2,1.4,.4,1)}
+.reveal-card .btn:not(.primary){color:var(--ink)}
 .reveal-card h3{font-family:var(--display);font-weight:400;font-size:30px;text-transform:uppercase;margin:0}
 @media (prefers-reduced-motion:reduce){.tile.flip,.reveal-card .tile{animation:none}}
+.vals{display:grid;gap:10px}
+.val{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 14px;background:linear-gradient(145deg,#FFF9EC,#F1E3BF);color:#085271;font-family:var(--display);font-size:clamp(18px,5.2vw,24px);line-height:1.15;text-transform:uppercase;box-shadow:inset 0 -3px 0 rgba(120,90,30,.2),0 4px 10px rgba(0,0,0,.25)}
+.val .vf{font-family:var(--body);font-size:22px}
+.val.flip{animation:tflip .8s cubic-bezier(.2,1.4,.4,1)}
+.val.empty-v{background:rgba(255,255,255,.06);border:2px dashed rgba(255,255,255,.4);box-shadow:none;min-height:50px;gap:10px}
+.val.empty-v i{display:block;height:10px;flex:1;max-width:90px;border-radius:5px;background:rgba(255,255,255,.18)}
+.reveal-card .val{font-size:26px;max-width:340px;justify-content:center;text-align:center;animation:tflip 1s cubic-bezier(.2,1.4,.4,1)}
 .eq-big .tile{--ts:clamp(44px,12.5vw,66px)}
 .eq-big .eq-res{font-size:clamp(36px,10vw,56px)}
 .eq-big .eqp{padding-block:26px}
@@ -272,7 +280,7 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 
 <script type="module">
 const FBV='10.12.2';
-const DEF={title:'Around the World',hintCost:20,wrongPenalty:5,eqResult:'TW',eqTop:'C × C × C',eqBottom:'L + V',eqAfter:'× U',finalMessage:'Head back to the meeting room'};
+const DEF={title:'Around the World',hintCost:20,wrongPenalty:5,eqResult:'TW',eqTop:'C × C × C',eqBottom:'L + V',eqAfter:'× U',rewardMode:'letters',wordsTitle:'Our values',finalMessage:'Head back to the meeting room'};
 const COLORS=['#E8590C','#1C7ED6','#2B8A3E','#AE3EC9','#C92A2A','#0C8599','#E67700','#5F3DC4'];
 const S={countries:[],teams:[],progress:{},config:{...DEF},canEdit:false,mode:'connecting',ready:false,user:null,
   view:'play',myTeam:lsGet('atw-team'),pick:null,flash:null,editing:null,armed:null,justStamped:null,err:null,pendingImg:undefined,busy:false};
@@ -411,7 +419,7 @@ function render(keep){if(drag&&keep)return;if(keep){const pl=document.querySelec
     const a=document.activeElement;kept.__f=a&&a.id;try{kept.__s=a&&a.selectionStart}catch(e){}}
   document.getElementById('brand').textContent=(S.config.title&&S.config.title!==DEF.title)?S.config.title:'Logic Events';
   document.title=S.config.title||DEF.title;
-  const tabs=[['play','Team play','Play'],['eq','Equation','Equation'],['board','Leaderboard','Board'],['control','Control room','Control']];
+  const tabs=[['play','Team play','Play'],['eq',isWords()?'Values':'Equation',isWords()?'Values':'Equation'],['board','Leaderboard','Board'],['control','Control room','Control']];
   document.getElementById('tabs').innerHTML=tabs.map(([k,l,sh])=>`<button data-act="view" data-v="${k}" aria-current="${S.view===k}"><span class="tl">${l}</span><span class="ts">${sh}</span></button>`).join('');
   const m=document.getElementById('mode');const ML={live:'Live',offline:'Reconnecting',demo:'Demo · this device',connecting:'Connecting'};
   m.className='mode '+(S.mode==='live'?'live':S.mode==='demo'?'demo':'');m.innerHTML=`<i></i>${ML[S.mode]||''}`;
@@ -440,7 +448,19 @@ function eqParts(){const c=S.config;return{res:c.eqResult||'',top:eqTokens(c.eqT
 function eqLetters(){const e=eqParts();return [...e.top,...e.bot,...e.after].filter(t=>t.l).map(t=>t.l)}
 function teamLetters(t){const p=prog(t.id),byId=Object.fromEntries(S.countries.map(c=>[c.id,c]));
   return p.stamps.map(s=>({l:(s.letter||((byId[s.countryId]||{}).letter)||'').toUpperCase(),c:byId[s.countryId]})).filter(x=>x.l)}
-function equationHTML(t,big){const e=eqParts();const all=eqLetters();if(!all.length)return'';
+/* ===== reward mode: 'letters' (equation, default) or 'words' (custom phrase per country) ===== */
+const isWords=()=>S.config.rewardMode==='words';
+function teamWords(t){const p=prog(t.id),byId=Object.fromEntries(S.countries.map(c=>[c.id,c]));
+  return p.stamps.map(s=>({w:((byId[s.countryId]||{}).word||'').trim(),c:byId[s.countryId]})).filter(x=>x.w)}
+const rewardTotal=()=>isWords()?S.countries.filter(c=>(c.word||'').trim()).length:eqLetters().length;
+const rewardGot=t=>Math.min(isWords()?teamWords(t).length:teamLetters(t).length,rewardTotal());
+const rewardUnit=()=>isWords()?'Values':'Letters';
+function wordsHTML(t){const list=S.countries.filter(c=>(c.word||'').trim());if(!list.length)return'';
+  const won=new Set(teamWords(t).map(x=>x.c&&x.c.id));const got=list.filter(c=>won.has(c.id)).length;
+  return `<section class="panel eqp"><div class="spread"><div><span class="label">Collect them all</span><h3>${esc(S.config.wordsTitle||DEF.wordsTitle)}</h3></div>${got===list.length?'<span class="eq-done">Complete</span>':`<span class="label">${got} / ${list.length}</span>`}</div>
+    <div class="vals">${list.map(c=>won.has(c.id)?`<div class="val${S.justStamped===c.id?' flip':''}"><span class="vf">${esc(c.flag||'')}</span><span>${esc(c.word)}</span></div>`:`<div class="val empty-v" aria-label="not unlocked yet">${'<i></i>'.repeat(Math.max(2,Math.min(4,c.word.trim().split(/\s+/).length)))}</div>`).join('')}</div>
+    <span class="label" style="text-align:center">Unlock one at each station when the operator stamps your passport</span></section>`}
+function equationHTML(t,big){if(isWords())return wordsHTML(t);const e=eqParts();const all=eqLetters();if(!all.length)return'';
   const pool=teamLetters(t).slice();let got=0;
   const row=toks=>`<div class="eq-row">${toks.map(tk=>{if(tk.o)return `<span class="eq-op">${tk.o}</span>`;
     const i=pool.findIndex(x=>x.l===tk.l);if(i>-1){const x=pool.splice(i,1)[0];got++;const fresh=S.justStamped&&x.c&&x.c.id===S.justStamped;
@@ -461,6 +481,8 @@ function waitingHTML(paused){return `<section class="panel empty wait"><img src=
   <div class="big">${paused?'The game is paused':'Get ready to travel'}</div>
   <p class="muted">${paused?'The organiser paused the game. Your progress is saved; this screen continues by itself when the game resumes.':'Your first shipment flyer appears here as soon as the organiser starts the game. Keep this screen open.'}</p></section>`}
 function showReveal(c,letter,pts){const r=document.getElementById('reveal');
+  if(isWords()){r.innerHTML=`<div class="reveal-card" role="dialog" aria-modal="true"><span class="label" style="color:#BFD9E6">${esc(c.flag||'')} ${esc(c.name)} · +${pts} points</span>
+    <span class="label" style="color:#fff">You unlocked</span><div class="val">${esc(c.word)}</div><div class="row" style="justify-content:center"><button class="btn primary" data-act="view" data-v="eq">See ${esc(S.config.wordsTitle||DEF.wordsTitle)}</button><button class="btn" data-act="closereveal">Continue</button></div></div>`;r.hidden=false;return}
   r.innerHTML=`<div class="reveal-card" role="dialog" aria-modal="true"><span class="label" style="color:#BFD9E6">${esc(c.flag||'')} ${esc(c.name)} · +${pts} points</span>
     <span class="tile">${esc(letter)}</span><h3>You won the letter ${esc(letter)}</h3><div class="row" style="justify-content:center"><button class="btn primary" data-act="view" data-v="eq">See the equation</button><button class="btn" data-act="closereveal">Continue</button></div></div>`;r.hidden=false}
 
@@ -512,7 +534,7 @@ function vPlay(){
   }
   const p=prog(team.id),r=route(team),n=r.length;
   let h=`<div class="teamcard"><span class="dot" style="background:${esc(team.color)}"></span><span class="teamname">${esc(team.name)}</span>
-    <div class="stat"><span class="label">Stamps</span><b>${p.stamps.length}/${n}</b></div><div class="stat"><span class="label">Points</span><b>${score(team.id)}</b></div>${eqLetters().length?`<div class="stat"><span class="label">Letters</span><b>${Math.min(teamLetters(team).length,eqLetters().length)}/${eqLetters().length}</b></div>`:''}
+    <div class="stat"><span class="label">Stamps</span><b>${p.stamps.length}/${n}</b></div><div class="stat"><span class="label">Points</span><b>${score(team.id)}</b></div>${rewardTotal()?`<div class="stat"><span class="label">${rewardUnit()}</span><b>${rewardGot(team)}/${rewardTotal()}</b></div>`:''}
     <button class="btn small" data-act="leave">Switch team</button><div class="prog" role="progressbar" aria-label="Journey progress" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${p.stamps.length}"><i style="width:${n?Math.round(p.stamps.length/n*100):0}%"></i></div></div>`;
   const fl=S.flash?`<div class="flash ${S.flash.k}${S.flash.k==='bad'?' shake':''}" role="status" id="inline-flash">${esc(S.flash.m)}</div>`:'';
   if(S.flash&&(p.step>=n||!n))h+=fl;
@@ -550,7 +572,9 @@ function vEq(){
   if(!S.ready)return `<div class="panel empty"><div class="big">Loading</div></div>`;
   const team=S.teams.find(t=>t.id===S.myTeam);
   if(!team)return `<section class="panel empty"><div class="big">Check in first</div><p class="muted">Choose your team on the Team play tab to see your equation.</p><button class="btn primary" data-act="view" data-v="play">Go to Team play</button></section>`;
-  if(!eqLetters().length)return `<section class="panel empty"><div class="big">No equation in this game</div></section>`;
+  if(!rewardTotal())return `<section class="panel empty"><div class="big">No ${isWords()?'values':'equation'} in this game</div></section>`;
+  if(isWords())return `<div class="teamcard"><span class="dot" style="background:${esc(team.color)}"></span><span class="teamname">${esc(team.name)}</span>
+    <div class="stat"><span class="label">Values</span><b>${rewardGot(team)}/${rewardTotal()}</b></div></div>${wordsHTML(team)}`;
   const won=teamLetters(team);
   return `<div class="teamcard"><span class="dot" style="background:${esc(team.color)}"></span><span class="teamname">${esc(team.name)}</span>
     <div class="stat"><span class="label">Letters</span><b>${Math.min(won.length,eqLetters().length)}/${eqLetters().length}</b></div></div>
@@ -567,7 +591,7 @@ function vBoardInner(){
   <div class="board">${ranked().map((x,i)=>{const r=route(x.t);return `<div class="lb${i===0&&x.score>0?' first':''}"><div class="rank">${x.score>0&&i<3?`<span class="medal">${['🥇','🥈','🥉'][i]}</span>`:i+1}</div>
     <div style="min-width:0"><div class="nm"><span class="dot" style="background:${esc(x.t.color)}"></span>${esc(x.t.name)}</div>
     <div class="pips">${r.map(c=>{const on=x.p.stamps.some(s=>s.countryId===c.id);return `<span class="pip${on?' on':''}" title="${on?esc(c.name):''}">${on?esc(c.flag||'✓'):''}</span>`}).join('')}</div></div>
-    <div class="sc">${x.score}<small>POINTS${eqLetters().length?` · ${Math.min(teamLetters(x.t).length,eqLetters().length)}/${eqLetters().length} LETTERS`:''}</small></div></div>`}).join('')}</div><img class="boardland" src="assets/landmarks.png" alt="" width="560" height="364">`;
+    <div class="sc">${x.score}<small>POINTS${rewardTotal()?` · ${rewardGot(x.t)}/${rewardTotal()} ${rewardUnit().toUpperCase()}`:''}</small></div></div>`}).join('')}</div><img class="boardland" src="assets/landmarks.png" alt="" width="560" height="364">`;
 }
 
 function armBtn(key,act,label,extra=''){const a=S.armed===key;return `<button class="btn small danger${a?' armed':''}" data-act="${a?act:'arm'}" data-key="${key}" ${extra}>${a?'Confirm':label}</button>`}
@@ -581,6 +605,7 @@ function countryForm(c){c=c||{};const isNew=!c.id;
   <div class="field"><label for="c-code">3-letter code (on stamp)</label><input id="c-code" name="code" maxlength="3" value="${esc(c.code)}" placeholder="JPN"></div>
   <div class="field"><label for="c-points">Max points</label><input id="c-points" name="points" type="number" min="0" value="${esc(c.points??100)}"></div>
   <div class="field"><label for="c-letter">Letter won here (equation)</label><input id="c-letter" name="letter" maxlength="1" style="text-transform:uppercase;font-family:var(--display);font-size:22px;width:70px" value="${esc(c.letter||'')}" placeholder="–"></div>
+  <div class="field" style="grid-column:1/-1"><label for="c-word">Value / phrase won here (custom mode)</label><input id="c-word" name="word" value="${esc(c.word||'')}" placeholder="e.g. Deal With Integrity"></div>
   <div class="field"><label for="c-sets">Game sets (teams that can play here at once)</label><input id="c-sets" name="sets" type="number" min="1" max="20" value="${esc(c.sets??1)}"></div></div>
   <div class="field"><label for="c-clue">Flyer clue text</label><textarea id="c-clue" name="clue" placeholder="The riddle that points to this country. Optional if you add a photo.">${esc(c.clue)}</textarea></div>
   <div class="field"><label for="c-photo">Photo clues (up to 4: puzzle slide, grid, cipher, map piece…)</label>
@@ -606,6 +631,9 @@ function audFormHTML(c){const cur=curAud(c);
   return `${cur==='loading'?'<span class="muted">Loading audio…</span>':cur?`<div class="row"><audio controls src="${cur}" style="flex:1;min-width:200px"></audio><button type="button" class="btn small danger" data-act="rmaud">Remove audio</button></div>`:'<span class="muted">No audio</span>'}
     <input id="c-audio" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav">
     <span class="muted" style="font-size:13px">Tip: use a 20–40 second clip so it loads fast on phones.</span>`}
+function wordsCheckHTML(){const miss=S.countries.filter(c=>!(c.word||'').trim());
+  return `<div class="note"><b>Values per country</b> ${miss.length?`<span style="color:var(--stamp);font-weight:700">· ${miss.length} without a value</span>`:'<span style="color:var(--ok);font-weight:700">· all set</span>'}
+    <div style="display:grid;gap:4px;margin-top:6px">${S.countries.map(c=>`<div>${esc((c.flag||'')+' '+c.name)}: ${c.word?`<b style="color:var(--navy)">${esc(c.word)}</b> ✅`:'<i>no value</i> ⚠️'}</div>`).join('')}</div></div>`}
 function eqCheckHTML(){const need={},have={};eqLetters().forEach(l=>need[l]=(need[l]||0)+1);
   S.countries.forEach(c=>{const l=String(c.letter||'').toUpperCase();if(l)(have[l]=have[l]||[]).push(c)});
   const keys=[...new Set([...Object.keys(need),...Object.keys(have)])].sort();if(!keys.length)return'';
@@ -649,7 +677,7 @@ function vControl(){
     :`<p class="muted">Add teams below to start tracking.</p>`;
   const countries=`<section class="panel"><div class="spread"><div><span class="label">Route</span><h2>Countries</h2></div>${E==='c-new'?'':`<button class="btn primary" data-act="edit" data-e="c-new">Add country</button>`}</div>
     ${E==='c-new'?countryForm():''}
-    ${S.countries.length?S.countries.map((c,i)=>E==='c-'+c.id?countryForm(c):`<div class="item"><span class="fl">${esc(c.flag||'✈')}</span><div style="min-width:0"><h3>${i+1}. ${esc(c.name)} <span class="label">· ${esc(code3(c))} · ${+c.points||0} pts ${c.letter?`· letter <b style="color:var(--navy)">${esc(c.letter)}</b> `:''}· ${Math.max(1,+c.sets||1)} set${(+c.sets||1)>1?'s':''} · code ${esc(c.stampCode||'—')}${c.audV?' · 🎧 audio':''}${c.grid?' · ▦ grid':''}${c.imgV?` · ${c.imgN||1} photo${(c.imgN||1)>1?'s':''}${c.overlay?' (overlay)':''}`:''}</span></h3>${c.clue?`<p>${esc(c.clue)}</p>`:''}${c.challenge?`<p><b>Station:</b> ${esc(c.challenge)}</p>`:''}</div>
+    ${S.countries.length?S.countries.map((c,i)=>E==='c-'+c.id?countryForm(c):`<div class="item"><span class="fl">${esc(c.flag||'✈')}</span><div style="min-width:0"><h3>${i+1}. ${esc(c.name)} <span class="label">· ${esc(code3(c))} · ${+c.points||0} pts ${c.letter?`· letter <b style="color:var(--navy)">${esc(c.letter)}</b> `:''}${c.word?`· “${esc(c.word)}” `:''}· ${Math.max(1,+c.sets||1)} set${(+c.sets||1)>1?'s':''} · code ${esc(c.stampCode||'—')}${c.audV?' · 🎧 audio':''}${c.grid?' · ▦ grid':''}${c.imgV?` · ${c.imgN||1} photo${(c.imgN||1)>1?'s':''}${c.overlay?' (overlay)':''}`:''}</span></h3>${c.clue?`<p>${esc(c.clue)}</p>`:''}${c.challenge?`<p><b>Station:</b> ${esc(c.challenge)}</p>`:''}</div>
       <div class="acts"><button class="btn small" data-act="move" data-id="${c.id}" data-d="-1" ${i===0?'disabled':''} aria-label="Move up">↑</button><button class="btn small" data-act="move" data-id="${c.id}" data-d="1" ${i===S.countries.length-1?'disabled':''} aria-label="Move down">↓</button>
       <button class="btn small" data-act="edit" data-e="c-${c.id}">Edit</button>${armBtn('dc-'+c.id,'delcountry','Delete',`data-id="${c.id}"`)}</div></div>`).join(''):(E==='c-new'?'':`<div class="note">No countries yet. Each country is one shipment flyer: a text and/or photo clue, the accepted answers, the station challenge and a stamp code.</div>`)}</section>`;
   const teams=`<section class="panel"><div class="spread"><div><span class="label">Crews</span><h2>Teams</h2></div>${E==='t-new'?'':`<button class="btn primary" data-act="edit" data-e="t-new">Add team</button>`}</div>
@@ -686,12 +714,19 @@ function vControl(){
     <div class="field"><label for="g-hint">Hint costs (pts)</label><input id="g-hint" name="hintCost" type="number" min="0" value="${esc(cfg.hintCost)}"></div>
     <div class="field"><label for="g-wrong">Wrong guess costs (pts)</label><input id="g-wrong" name="wrongPenalty" type="number" min="0" value="${esc(cfg.wrongPenalty)}"></div>
     <div class="field" style="grid-column:1/-1"><label for="g-final">Message when a team finishes all countries</label><input id="g-final" name="finalMessage" value="${esc(cfg.finalMessage||DEF.finalMessage)}"></div>
+    <div class="field" style="grid-column:1/-1"><label for="g-mode">What teams collect at each station</label>
+      <select id="g-mode" name="rewardMode"><option value="letters"${!isWords()?' selected':''}>Equation letters (default)</option><option value="words"${isWords()?' selected':''}>Custom values / phrases (one per country)</option></select></div>
+    <div class="field" style="grid-column:1/-1"><label for="g-wt">Title for the values board (custom mode)</label><input id="g-wt" name="wordsTitle" value="${esc(cfg.wordsTitle||DEF.wordsTitle)}" placeholder="Our values"></div>
     <div class="field"><label for="g-eqr">Equation result</label><input id="g-eqr" name="eqResult" value="${esc(cfg.eqResult)}" placeholder="TW"></div>
     <div class="field"><label for="g-eqt">Top line (letters and × + −)</label><input id="g-eqt" name="eqTop" value="${esc(cfg.eqTop)}" placeholder="C × C × C"></div>
     <div class="field"><label for="g-eqb">Bottom line (leave empty for no fraction)</label><input id="g-eqb" name="eqBottom" value="${esc(cfg.eqBottom)}" placeholder="L + V"></div>
     <div class="field"><label for="g-eqa">After the fraction</label><input id="g-eqa" name="eqAfter" value="${esc(cfg.eqAfter)}" placeholder="× U"></div>
     <div class="field" style="align-self:end"><button class="btn primary">Save settings</button></div></form>
-    ${eqCheckHTML()}
+    ${isWords()?wordsCheckHTML():eqCheckHTML()}
+    <form data-form="bulkwords" class="note" style="display:grid;gap:8px"><b>Values for this event (paste once)</b>
+      <span class="muted" style="font-size:13px">One per line: <code>Country = Value</code> or <code>Value (Country)</code>. Saves the value on each country and switches to custom mode.</span>
+      <textarea id="g-bulk" name="bulk" rows="6" style="font-family:var(--mono);font-size:13px" placeholder="Spain = Deal With Integrity&#10;France = Customers Come First">${esc(S.countries.filter(c=>c.word).map(c=>c.name+' = '+c.word).join('\n'))}</textarea>
+      <div class="row"><button class="btn primary">Apply values</button><button type="button" class="btn" data-act="usewords" data-s="letters">Back to equation letters</button></div></form>
     <div class="spread note"><span>Clear every stamp and score before a new event. Countries and teams stay.</span>${armBtn('reset-all','resetall','Reset all progress')}</div>
     <div class="spread note"><span><b>Logic starter pack:</b> the standard countries with their clues (grid, codes, cuisine, transparent sheet, music), station games, stamp codes and 8 teams with tracks. Uploaded audio is kept. Replaces the current countries, teams and progress.</span>${armBtn('starter','starter','Load starter pack')}</div></section>`;
   const join=`<section class="panel"><div class="spread"><div><span class="label">Boarding</span><h2>Team join link</h2></div>${S.mode==='live'?`<button class="btn small" data-act="logout">Sign out ${esc(S.user&&S.user.email||'')}</button>`:''}</div>
@@ -704,7 +739,7 @@ function flash(k,m){S.flash={k,m};clearTimeout(flash.t);flash.t=setTimeout(()=>{
 async function doStamp(t,c,pts,by){const p=prog(t.id);const n=route(t).length;
   const letter=String(c.letter||'').toUpperCase().slice(0,1);
   p.stamps=[...p.stamps.filter(s=>s.countryId!==c.id),{countryId:c.id,points:pts,at:Date.now(),by,letter}];p.step=p.step+1;p.phase='flyer';
-  if(letter&&by==='station')showReveal(c,letter,pts);
+  if(by==='station'&&(isWords()?(c.word||'').trim():letter))showReveal(c,letter,pts);
   if(p.step>=n)p.finishedAt=Date.now();S.justStamped=c.id;setTimeout(()=>{S.justStamped=null},1200);await saveProg(t.id,p)}
 
 document.addEventListener('change',async e=>{
@@ -757,6 +792,7 @@ document.addEventListener('click',async e=>{
     if(p.phase==='travel'){p.phase='flyer'}else if(p.stamps.length){p.stamps=p.stamps.slice(0,-1);p.step=Math.max(0,p.step-1);p.phase='travel';p.finishedAt=null}
     await saveProg(id,p);return}
   if(a==='resetteam'){await w(`progress/${id}`,null);render(true);return}
+  if(a==='usewords'){await w('config/rewardMode',b.dataset.s);flash('good',b.dataset.s==='words'?'Custom values on.':'Back to equation letters.');render(true);return}
   if(a==='board'){await w('config/hideBoard',b.dataset.s==='hide');flash('good',b.dataset.s==='hide'?'Leaderboard hidden from teams and the projector.':'Leaderboard is visible again.');render(true);return}
   if(a==='sess'){await setSession(b.dataset.s);flash('good',b.dataset.s==='live'?'Session started: teams now see their first flyer.':'Session paused.');render(true);return}
   if(a==='resetall'){await w('progress',null);await setSession('waiting');flash('good','All progress cleared.');render(true);return}
@@ -784,7 +820,7 @@ document.addEventListener('submit',async e=>{
     setTimeout(()=>{const el=document.getElementById('inline-flash');if(el)el.scrollIntoView({behavior:'smooth',block:'center'})},60);return}
   if(kind==='stamp'){const t=S.teams.find(x=>x.id===S.myTeam);const p=prog(t.id),c=route(t)[p.step];if(!c)return;
     if(String(d.code).trim()!==String(c.stampCode||'').trim()){flash('bad','Wrong stamp code. Only the station operator should enter it.');render(true);return}
-    const pts=Math.max(0,Math.min(+c.points||0,Math.round(+d.pts||0)));flash('good',`Stamped: ${c.name}, +${pts} points${c.letter?` and the letter ${String(c.letter).toUpperCase()}`:''}.`);await doStamp(t,c,pts,'station');return}
+    const pts=Math.max(0,Math.min(+c.points||0,Math.round(+d.pts||0)));flash('good',`Stamped: ${c.name}, +${pts} points${c.letter?` and the ${isWords()?'value':'letter'} ${isWords()?(c.word||''):String(c.letter).toUpperCase()}`:''}.`);await doStamp(t,c,pts,'station');return}
   if(kind==='country'){const id=f.dataset.id||rid();const old=S.countries.find(c=>c.id===id)||{};
     const hasImg=S.pendingImg!==undefined?S.pendingImg.length>0:!!old.imgV;
     const hasAud=S.pendingAud!==undefined?!!S.pendingAud:!!old.audV;
@@ -795,11 +831,17 @@ document.addEventListener('submit',async e=>{
     let audV=old.audV||null;
     if(S.pendingAud!==undefined){if(S.pendingAud){S.busyMsg='Uploading audio ('+(S.pendingAud.size/1048576).toFixed(1)+' MB)…';render(true);await wb(`images/a_${id}`,S.pendingAud.data);audV=Date.now();AUD[id+'@'+audV]=S.pendingAud.data}else{await wb(`images/a_${id}`,null);audV=null}}
     const order=old.id?(old.order??S.countries.indexOf(old)):S.countries.length;
-    await w(`countries/${id}`,{name:d.name.trim(),flag:d.flag.trim(),code:d.code.trim().toUpperCase(),points:Math.max(0,+d.points||0),clue:d.clue.trim(),answers:d.answers.trim(),hint:d.hint.trim(),challenge:d.challenge.trim(),stampCode:d.stampCode.trim(),color:d.color,letter:String(d.letter||'').trim().toUpperCase().slice(0,1),sets:Math.max(1,Math.min(20,Math.round(+d.sets||1))),order,imgV,imgN:hasImg?(S.pendingImg!==undefined?S.pendingImg.length:(old.imgN||1)):0,overlay:!!d.overlay,audV,grid:String(d.grid||'').trim()});
+    await w(`countries/${id}`,{name:d.name.trim(),flag:d.flag.trim(),code:d.code.trim().toUpperCase(),points:Math.max(0,+d.points||0),clue:d.clue.trim(),answers:d.answers.trim(),hint:d.hint.trim(),challenge:d.challenge.trim(),stampCode:d.stampCode.trim(),color:d.color,letter:String(d.letter||'').trim().toUpperCase().slice(0,1),word:String(d.word||'').trim(),sets:Math.max(1,Math.min(20,Math.round(+d.sets||1))),order,imgV,imgN:hasImg?(S.pendingImg!==undefined?S.pendingImg.length:(old.imgN||1)):0,overlay:!!d.overlay,audV,grid:String(d.grid||'').trim()});
     S.busy=false;S.busyMsg='';S.editing=null;S.pendingImg=undefined;S.pendingAud=undefined;flash('good',`${d.name.trim()} saved${hasAud?' with audio':''}.`);render();return}
   if(kind==='team'){const id=f.dataset.id||rid();const old=S.teams.find(t=>t.id===id);const st=+d.start||0;
     const keep=old&&(+old.start||0)===st&&arr(old.route).length?arr(old.route):rotation(st).map(c=>c.id);
     await w(`teams/${id}`,{name:d.name.trim(),pin:d.pin.trim(),start:st,route:keep,color:d.color,created:(old||{}).created||Date.now()});S.editing=null;render();return}
+  if(kind==='bulkwords'){const norm2=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z\u0600-\u06ff]/g,'');
+    const lines=String(d.bulk||'').split(/\n+/).map(l=>{const m=l.match(/^\s*(.+?)\s*\(([^)]+)\)\s*$/);return m?[m[2],m[1]]:l.split(/=|:|\t/)}).filter(x=>x.length>=2);let ok=0,bad=[];
+    for(const [cn,...rest] of lines){const val=rest.join(' ').trim();const c=S.countries.find(x=>norm2(x.name)===norm2(cn)||norm2(x.code)===norm2(cn));
+      if(c&&val){await w(`countries/${c.id}/word`,val);ok++}else bad.push(cn.trim())}
+    await w('config/rewardMode','words');
+    flash(bad.length?'bad':'good',`${ok} values saved, custom mode on.${bad.length?' Not matched: '+bad.join(', '):''}`);render(true);return}
   if(kind==='quickteams'){const N=Math.max(1,Math.min(60,Math.round(+d.n||0)));
     if(S.teams.length&&S.armed!=='qt'){S.armed='qt';flash('bad',`Press the button again to replace all ${S.teams.length} teams with ${N} new teams.`);render(true);return}
     S.armed=null;S.busy=true;render(true);
@@ -812,7 +854,7 @@ document.addEventListener('submit',async e=>{
     S.busy=false;flash('good',`${N} teams created with PINs and tracks. Download the sheet (CSV) to print the PINs.`);render(true);return}
   if(kind==='allsets'){const k=Math.max(1,Math.min(9,+d.sets||1));for(const c of S.countries){await w(`countries/${c.id}/sets`,k)}
     flash('good',`All ${S.countries.length} countries set to ${k} game set${k>1?'s':''}. Press Auto-arrange to update the tracks.`);render(true);return}
-  if(kind==='config'){await w('config',{session:S.config.session||null,hideBoard:!!S.config.hideBoard,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim(),finalMessage:(d.finalMessage||'').trim()||DEF.finalMessage});flash('good','Settings saved.');render(true);return}
+  if(kind==='config'){await w('config',{session:S.config.session||null,hideBoard:!!S.config.hideBoard,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim(),rewardMode:d.rewardMode==='words'?'words':'letters',wordsTitle:(d.wordsTitle||'').trim()||DEF.wordsTitle,finalMessage:(d.finalMessage||'').trim()||DEF.finalMessage});flash('good','Settings saved.');render(true);return}
   }catch(err){S.busy=false;S.busyMsg='';render(true)}
 });
 
