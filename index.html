@@ -218,6 +218,17 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 @keyframes tflip{0%{transform:rotateY(90deg) scale(1.3)}100%{transform:none}}
 .eq-done{background:#1EB44B;color:#fff;border-radius:999px;padding:3px 10px;font-weight:700;font-size:12px}
 .reveal{position:fixed;inset:0;z-index:70;background:rgba(4,30,44,.93);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px;cursor:pointer}
+.fly{position:fixed;inset:0;z-index:72;background:#F6F8FA;overflow:hidden;cursor:pointer}
+.fly svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.fly .fhead{position:absolute;left:0;right:0;top:max(18px,env(safe-area-inset-top,0px));display:grid;justify-items:center;gap:6px;text-align:center;pointer-events:none}
+.fly .fhead .label{background:var(--navy);color:#fff;padding:5px 12px;border-radius:30px}
+.fly .fhead b{font-family:var(--display);font-weight:400;font-size:28px;color:var(--navy);text-transform:uppercase;letter-spacing:.02em;text-shadow:0 2px 0 #fff}
+.fly .farr{position:absolute;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);opacity:0;transition:all .45s cubic-bezier(.2,1.3,.4,1);width:min(360px,calc(100% - 32px));background:#fff;border-radius:18px;padding:18px;box-shadow:0 20px 50px rgba(8,82,113,.25);display:grid;gap:8px;text-align:center;justify-items:center}
+.fly .farr.on{opacity:1;transform:translate(-50%,0)}
+.fly .farr h3{font-family:var(--display);font-weight:400;font-size:30px;text-transform:uppercase;color:var(--navy);margin:0}
+.scoreed{background:var(--soft);border-radius:12px;padding:14px;display:grid;gap:12px}
+.scoreed .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.scoreed .field input{width:100%}
 .reveal-card{display:grid;justify-items:center;gap:14px;text-align:center;color:#fff}
 .reveal-card .tile{--ts:120px;font-size:76px;animation:tflip 1s cubic-bezier(.2,1.4,.4,1)}
 .reveal-card .btn:not(.primary){color:var(--ink)}
@@ -290,11 +301,12 @@ td.num{font-variant-numeric:tabular-nums;font-weight:700}
 <footer class="foot">Powered by <img src="assets/logic-logo.png" alt="Logic Events" width="73" height="26"></footer>
 <div class="guide" id="guide" hidden></div>
 <div class="reveal" id="reveal" hidden data-act="closereveal"></div>
+<div class="fly" id="fly" hidden data-act="closefly"></div>
 <div class="zoom" id="zoom" hidden><img id="zoomimg" alt="Clue photo, enlarged"></div>
 
 <script type="module">
 const FBV='10.12.2';
-const DEF={title:'Around the World',hintCost:20,wrongPenalty:5,eqResult:'TW',eqTop:'C × C × C',eqBottom:'L + V',eqAfter:'× U',rewardMode:'letters',wordsTitle:'Our values',finalMessage:'Head back to the meeting room'};
+const DEF={title:'Around the World',hintCost:20,wrongPenalty:5,eqResult:'TW',eqTop:'C × C × C',eqBottom:'L + V',eqAfter:'× U',rewardMode:'letters',wordsTitle:'Our values',finalMessage:'Head back to the meeting room',startFrom:'Egypt'};
 const COLORS=['#E8590C','#1C7ED6','#2B8A3E','#AE3EC9','#C92A2A','#0C8599','#E67700','#5F3DC4'];
 const S={countries:[],teams:[],progress:{},config:{...DEF},canEdit:false,mode:'connecting',ready:false,user:null,
   view:'play',myTeam:lsGet('atw-team'),pick:null,flash:null,editing:null,armed:null,justStamped:null,err:null,pendingImg:undefined,busy:false};
@@ -363,8 +375,8 @@ function route(team){const ids=arr(team.route);
   if(ids.length){const byId=Object.fromEntries(S.countries.map(c=>[c.id,c]));const seen=new Set();const r=[];
     ids.forEach(id=>{if(byId[id]&&!seen.has(id)){seen.add(id);r.push(byId[id])}});S.countries.forEach(c=>{if(!seen.has(c.id))r.push(c)});return r}
   return rotation(team.start)}
-function prog(id){const p=S.progress[id]||{};return{step:p.step||0,phase:p.phase||'flyer',stamps:arr(p.stamps),wrong:p.wrong||0,hints:arr(p.hints),finishedAt:p.finishedAt||null}}
-function score(id){const p=prog(id),c=S.config;return p.stamps.reduce((a,s)=>a+(+s.points||0),0)-p.hints.length*(+c.hintCost||0)-p.wrong*(+c.wrongPenalty||0)}
+function prog(id){const p=S.progress[id]||{};return{step:p.step||0,phase:p.phase||'flyer',stamps:arr(p.stamps),wrong:p.wrong||0,hints:arr(p.hints),finishedAt:p.finishedAt||null,adjust:+p.adjust||0}}
+function score(id){const p=prog(id),c=S.config;return p.stamps.reduce((a,s)=>a+(+s.points||0),0)-p.hints.length*(+c.hintCost||0)-p.wrong*(+c.wrongPenalty||0)+(+p.adjust||0)}
 function ranked(){return S.teams.map(t=>{const p=prog(t.id);const last=p.stamps.length?p.stamps.at(-1).at:Infinity;return{t,p,score:score(t.id),last}})
   .sort((a,b)=>b.score-a.score||b.p.stamps.length-a.p.stamps.length||a.last-b.last)}
 function statusOf(t){const p=prog(t.id),r=route(t),n=r.length;
@@ -507,7 +519,55 @@ async function setSession(state){const cur=sess();await w('config/session',{stat
 function waitingHTML(paused){return `<section class="panel empty wait"><img src="assets/landmarks.png" alt="" width="380" height="247" style="width:min(380px,100%);height:auto">
   <span class="label"><span class="pulse"></span> ${paused?'Game paused':'Checked in'}</span>
   <div class="big">${paused?'The game is paused':'Get ready to travel'}</div>
-  <p class="muted">${paused?'The organiser paused the game. Your progress is saved; this screen continues by itself when the game resumes.':'Your first shipment flyer appears here as soon as the organiser starts the game. Keep this screen open.'}</p></section>`}
+  <p class="muted">${paused?'The organiser paused the game. Your progress is saved; this screen continues by itself when the game resumes.':'Your first shipment flyer appears here as soon as the organiser starts the game. Keep this screen open.'}</p>${paused?'':`<span class="chip">✈ Departure: ${esc(startPlace().flag||'')} ${esc(startPlace().name)}</span>`}</section>`}
+/* ---------- flight animation (map.jpg is 1600×900; numbers are positions on that picture) ---------- */
+const GEO=(()=>{const m={};'egypt|egy|eg:880:445;saudi arabia|ksa|sau|saudia:955:480;united arab emirates|uae|are|dubai:995:468;qatar|qat:980:462;kuwait|kwt:950:438;oman|omn:1010:492;jordan|jor:912:432;lebanon|lbn:905:412;turkey|tur|turkiye:880:390;iran|irn:1000:420;pakistan|pak:1060:412;india|ind:1110:405;maldives|mdv:1090:500;china|chn:1290:380;japan|jpn:1405:390;south korea|korea|kor:1355:372;thailand|tha:1240:480;vietnam|vnm:1268:470;philippines|phl:1330:482;singapore|sgp:1255:560;malaysia|mys:1245:545;indonesia|idn:1290:585;australia|aus:1400:730;new zealand|nzl:1560:800;united kingdom|uk|gbr|england|britain:718:320;ireland|irl:690:322;france|fra:742:360;spain|esp:720:395;portugal|prt:700:400;italy|ita:790:385;greece|grc:832:400;germany|deu|ger:775:335;netherlands|nld|holland:758:322;belgium|bel:750:340;switzerland|che:768:362;austria|aut:792:355;poland|pol:812:325;sweden|swe:795:240;norway|nor:768:240;russia|rus:910:285;ukraine|ukr:860:335;morocco|mar:700:425;algeria|dza:742:452;tunisia|tun:780:418;libya|lby:822:450;sudan|sdn:880:510;ethiopia|eth:922:552;kenya|ken:930:600;tanzania|tza:920:632;nigeria|nga:762:540;ghana|gha:722:560;senegal|sen:660:520;south africa|zaf|rsa:850:725;madagascar|mdg:965:690;mauritius|mus:992:700;united states|usa|us|america:230:385;canada|can:220:255;mexico|mex:215:480;cuba|cub:300:470;brazil|bra:450:640;argentina|arg:410:780;chile|chl:380:790;peru|per:345:660;colombia|col:330:580'.split(';').forEach(l=>{const [n,x,y]=l.split(':');n.split('|').forEach(k=>m[k]=[+x,+y])});return m})();
+function geoOf(c){const keys=[c&&c.name,c&&c.code,c&&c.id].filter(Boolean).map(v=>String(v).toLowerCase().trim());
+  for(const k of keys)if(GEO[k])return GEO[k];
+  let h=0;for(const ch of keys.join(''))h=(h*31+ch.charCodeAt(0))>>>0;return [700+h%500,300+(h>>9)%300]}
+function startPlace(){const n=(S.config.startFrom||DEF.startFrom).trim()||'Egypt';const c=S.countries.find(x=>norm(x.name)===norm(n));
+  return c||{name:n,flag:norm(n)==='egypt'?'🇪🇬':'✈',code:n}}
+function fromPlace(t){const p=prog(t.id);const s=p.stamps.at(-1);return (s&&S.countries.find(c=>c.id===s.countryId))||startPlace()}
+const PLANE=`<path d="M-56 0H-118" stroke="#085271" stroke-width="2.5" stroke-dasharray="5 4"/>
+  <g transform="translate(-232 0)"><rect x="0" y="-27" width="114" height="54" rx="9" fill="#fff" stroke="#085271" stroke-width="3"/><path d="M0 -27 L-14 -20 L-6 0 L-14 20 L0 27Z" fill="#E4572E"/><image class="flylogo" x="9" y="-21" width="96" height="42" preserveAspectRatio="xMidYMid meet"/></g>
+  <path d="M-46 -8 L-60 -34 L-50 -34 L-28 -8Z M-46 8 L-60 34 L-50 34 L-28 8Z" fill="#0b6a91"/>
+  <path d="M8 -9 L-22 -62 L-6 -62 L32 -9Z M8 9 L-22 62 L-6 62 L32 9Z" fill="#085271"/>
+  <path d="M-52 -9 H44 Q64 -9 66 0 Q64 9 44 9 H-52 Q-58 0 -52 -9Z" fill="#fff" stroke="#085271" stroke-width="3"/>
+  <path d="M-40 0 H40" stroke="#E4572E" stroke-width="4"/><path d="M50 -5 Q58 0 50 5" fill="#9fd3ea"/>`;
+function flyTo(from,to){const el=document.getElementById('fly');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const A=geoOf(from),B=geoOf(to);const W=innerWidth,H=innerHeight,asp=H/W;
+  const dx=B[0]-A[0],dy=B[1]-A[1],dist=Math.hypot(dx,dy)||1;
+  const vw=Math.max(Math.abs(dx)+260,(Math.abs(dy)+340)/asp,460),vh=vw*asp;
+  const cl=(v,size,full)=>size>=full?full/2:Math.min(Math.max(v,size/2),full-size/2);
+  const cx=(A[0]+B[0])/2,cy=(A[1]+B[1])/2;const vx=cl(cx,vw,1600)-vw/2,vy=cl(cy,vh,900)-vh/2;
+  const k=Math.min(.4*vw/300,2.4),fs=Math.max(14,vw*.036);
+  let nx=-dy/dist,ny=dx/dist;if(ny>0){nx=-nx;ny=-ny}const C=[cx+nx*dist*.3,cy+ny*dist*.3];
+  const d=`M${A[0]} ${A[1]} Q${C[0]} ${C[1]} ${B[0]} ${B[1]}`;
+  const lab=(c,P)=>`<circle cx="${P[0]}" cy="${P[1]}" r="${fs*.45}" fill="#E4572E" stroke="#fff" stroke-width="${fs*.15}"/>
+    <text x="${P[0]}" y="${P[1]-fs*.9}" text-anchor="middle" font-family="Figtree,system-ui,sans-serif" font-weight="800" font-size="${fs}" fill="#085271" stroke="#fff" stroke-width="${fs*.25}" paint-order="stroke">${esc((c.flag||'')+' '+c.name)}</text>`;
+  el.innerHTML=`<svg viewBox="${vx} ${vy} ${vw} ${vh}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <rect x="${vx-50}" y="${vy-50}" width="${vw+100}" height="${vh+100}" fill="#F6F8FA"/><image href="assets/map.jpg" x="0" y="0" width="1600" height="900"/><rect x="0" y="-2" width="1600" height="8" fill="#F6F8FA"/>
+    <path d="${d}" fill="none" stroke="#085271" stroke-opacity=".3" stroke-width="${fs*.18}" stroke-dasharray="${fs*.5} ${fs*.45}"/>
+    <path id="flytrail" d="${d}" fill="none" stroke="#E4572E" stroke-width="${fs*.22}" stroke-linecap="round"/>
+    ${lab(from,A)}${lab(to,B)}
+    <circle id="flyring" cx="${B[0]}" cy="${B[1]}" r="${fs*.5}" fill="none" stroke="#E4572E" stroke-width="${fs*.12}" opacity="0"/>
+    <g id="flyplane">${PLANE}</g></svg>
+    <div class="fhead"><span class="label">✈ Flight in progress</span><b>${esc(from.name)} → ${esc(to.name)}</b></div>
+    <div class="farr" id="farr"><img class="flylogo2" alt="" style="height:38px;max-width:150px;object-fit:contain"><span class="label">Shipment cleared customs</span><h3>Welcome to ${esc(to.flag||'')} ${esc(to.name)}</h3>
+      <p class="muted" style="margin:0">Go to the ${esc(to.name)} station and play its game.</p><button class="btn primary" data-act="closefly">Continue</button></div>`;
+  const logo=clientLogo()||'assets/logic-logo.png';el.querySelectorAll('.flylogo').forEach(i=>i.setAttribute('href',logo));el.querySelector('.flylogo2').src=logo;
+  el.hidden=false;const trail=el.querySelector('#flytrail'),pl=el.querySelector('#flyplane'),ring=el.querySelector('#flyring');const L=trail.getTotalLength(),logoI=el.querySelector('.flylogo');
+  trail.style.strokeDasharray=L;const T=reduce?1:3600,t0=performance.now();
+  const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+  const step=now=>{if(el.hidden)return;const u=Math.min(1,(now-t0)/T),e=ease(u);const pt=trail.getPointAtLength(L*e),p2=trail.getPointAtLength(Math.min(L,L*e+1)),p0=trail.getPointAtLength(Math.max(0,L*e-1));
+    const ang=Math.atan2(p2.y-p0.y,p2.x-p0.x)*180/Math.PI,sc=k*(.75+.25*Math.sin(Math.PI*e)+(1-e)*.25);
+    if(logoI)logoI.setAttribute('transform',Math.abs(ang)>90?'rotate(180 57 0)':'');
+    pl.setAttribute('transform',`translate(${pt.x} ${pt.y}) rotate(${ang}) scale(${sc})`);trail.style.strokeDashoffset=L*(1-e);
+    if(u<1)requestAnimationFrame(step);else{ring.style.opacity=1;try{ring.animate([{r:fs*.5,opacity:1},{r:fs*3,opacity:0}],{duration:1200,iterations:Infinity})}catch(_){}
+      pl.style.transition='opacity .5s';pl.style.opacity=0;el.querySelector('#farr').classList.add('on');el.querySelector('.fhead .label').textContent='✈ Landed'}};
+  requestAnimationFrame(step)}
+
 function showReveal(c,letter,pts){const r=document.getElementById('reveal');
   if(isWords()){r.innerHTML=`<div class="reveal-card" role="dialog" aria-modal="true"><span class="label" style="color:#BFD9E6">${esc(c.flag||'')} ${esc(c.name)} · +${pts} points</span>
     <span class="label" style="color:#fff">You unlocked</span><div class="val">${esc(c.word)}</div><div class="row" style="justify-content:center"><button class="btn primary" data-act="view" data-v="eq">See ${esc(S.config.wordsTitle||DEF.wordsTitle)}</button><button class="btn" data-act="closereveal">Continue</button></div></div>`;r.hidden=false;return}
@@ -719,6 +779,16 @@ function vLogin(){return `<section class="panel" style="max-width:440px"><div><s
   <div class="field"><label for="l-pw">Password</label><input id="l-pw" name="pw" type="password" autocomplete="current-password" required></div>
   <div><button class="btn primary">Sign in</button></div></form>${S.flash?`<div class="flash ${S.flash.k}">${esc(S.flash.m)}</div>`:''}</section>`}
 
+function scoreEditor(t){const p=prog(t.id),c=S.config;const r=route(t);
+  const cells=r.map(co=>{const s=p.stamps.find(x=>x.countryId===co.id);
+    return s?`<div class="field"><label for="sc-${co.id}">${esc(co.flag||'')} ${esc(co.name)}</label><input id="sc-${co.id}" name="pts_${co.id}" type="number" step="1" value="${+s.points||0}"></div>`
+      :`<div class="field"><label>${esc(co.flag||'')} ${esc(co.name)}</label><span class="muted" style="font-size:13px;padding:10px 0">Not played yet</span></div>`}).join('');
+  return `<form data-form="scores" data-id="${t.id}" class="scoreed"><div class="spread"><b>${esc(t.name)}: points per game</b><span class="label">Total now ${score(t.id)}</span></div>
+    <div class="sgrid">${cells}</div>
+    <div class="sgrid"><div class="field"><label for="sc-wrong">Wrong answers (−${+c.wrongPenalty||0} each)</label><input id="sc-wrong" name="wrong" type="number" min="0" step="1" value="${p.wrong}"></div>
+    <div class="field"><label for="sc-hints">Hints opened (−${+c.hintCost||0} each)</label><input id="sc-hints" name="hints" type="number" min="0" step="1" value="${p.hints.length}"></div>
+    <div class="field"><label for="sc-adj">Bonus (+) or penalty (−)</label><input id="sc-adj" name="adjust" type="number" step="1" value="${p.adjust}"></div></div>
+    <div class="row"><button class="btn primary">Save scores</button><button type="button" class="btn" data-act="cancel">Close</button><span class="muted" style="font-size:13px">The leaderboard updates as soon as you save.</span></div></form>`}
 function vControl(){
   if(!S.ready)return `<div class="panel empty"><div class="big">Loading</div></div>`;
   if(!S.canEdit)return vLogin();
@@ -735,8 +805,8 @@ function vControl(){
   const live=S.teams.length?`<div class="tbl"><table><thead><tr><th>Team</th><th>PIN</th><th>Status</th><th>Where</th><th>Stamps</th><th>Points</th><th></th></tr></thead><tbody>
     ${ranked().map(({t,p,score:sc})=>{const st=statusOf(t);return `<tr><td><span class="row" style="gap:8px;flex-wrap:nowrap"><span class="dot" style="background:${esc(t.color)}"></span><b>${esc(t.name)}</b></span></td>
     <td style="font-family:var(--mono)">${esc(t.pin)}</td><td><span class="chip ${st.chip}">${st.txt}</span></td><td>${esc(st.where)}</td><td class="num">${p.stamps.length}/${S.countries.length}</td><td class="num">${sc}</td>
-    <td><div class="row" style="gap:6px;flex-wrap:nowrap;justify-content:flex-end">${st.chip==='station'?`<button class="btn small primary" data-act="opstamp" data-id="${t.id}">Stamp</button>`:''}
-    ${p.stamps.length||p.phase==='travel'?`<button class="btn small" data-act="undo" data-id="${t.id}">Undo</button>`:''}${armBtn('rp-'+t.id,'resetteam','Reset',`data-id="${t.id}"`)}</div></td></tr>`}).join('')}</tbody></table></div>`
+    <td><div class="row" style="gap:6px;flex-wrap:nowrap;justify-content:flex-end"><button class="btn small" data-act="edit" data-e="sc-${t.id}">Scores</button>${st.chip==='station'?`<button class="btn small primary" data-act="opstamp" data-id="${t.id}">Stamp</button>`:''}
+    ${p.stamps.length||p.phase==='travel'?`<button class="btn small" data-act="undo" data-id="${t.id}">Undo</button>`:''}${armBtn('rp-'+t.id,'resetteam','Reset',`data-id="${t.id}"`)}</div></td></tr>${E==='sc-'+t.id?`<tr><td colspan="7">${scoreEditor(t)}</td></tr>`:''}`}).join('')}</tbody></table></div>`
     :`<p class="muted">Add teams below to start tracking.</p>`;
   const countries=`<section class="panel"><div class="spread"><div><span class="label">Route</span><h2>Countries</h2></div>${E==='c-new'?'':`<button class="btn primary" data-act="edit" data-e="c-new">Add country</button>`}</div>
     ${E==='c-new'?countryForm():''}
@@ -782,6 +852,7 @@ function vControl(){
       <span class="muted" style="font-size:13px">Shows in the header, check-in screen, leaderboard, finish screen and team cards. PNG with transparent background looks best.</span></div>
     <div class="field"><label for="g-cname">Client name (optional, shown in the header)</label><input id="g-cname" name="clientName" value="${esc(cfg.clientName||'')}" placeholder="e.g. Mars"></div>
     <div class="field"><label for="g-bcol">Client colour for main buttons</label><div class="row"><input id="g-bcol" name="brandColor" type="color" value="${esc(cfg.brandColor||'#E4572E')}" style="height:44px;padding:4px;width:80px"><button type="button" class="btn small" data-act="resetcol">Logic default</button></div></div>
+    <div class="field"><label for="g-start">Teams start their flight from</label><input id="g-start" name="startFrom" value="${esc(cfg.startFrom||DEF.startFrom)}" placeholder="Egypt"></div>
     <div class="field" style="grid-column:1/-1"><label for="g-final">Message when a team finishes all countries</label><input id="g-final" name="finalMessage" value="${esc(cfg.finalMessage||DEF.finalMessage)}"></div>
     <div class="field" style="grid-column:1/-1"><label for="g-mode">What teams collect at each station</label>
       <select id="g-mode" name="rewardMode"><option value="letters"${!isWords()?' selected':''}>Equation letters (default)</option><option value="words"${isWords()?' selected':''}>Custom values / phrases (one per country)</option></select></div>
@@ -801,7 +872,7 @@ function vControl(){
   const join=`<section class="panel"><div class="spread"><div><span class="label">Boarding</span><h2>Team join link</h2></div>${S.mode==='live'?`<button class="btn small" data-act="logout">Sign out ${esc(S.user&&S.user.email||'')}</button>`:''}</div>
     <div class="qrbox"><div id="qr"></div><div style="display:grid;gap:8px;min-width:0;flex:1 1 220px"><span class="muted">Teams scan this, pick their team and enter their PIN. No account needed.</span><code>${esc(joinURL())}</code><div><button class="btn small" data-act="copy">Copy link</button></div></div></div>
     ${S.teams.length?`<div class="spread note"><span><b>Team cards:</b> one QR per team with its name and PIN. Scanning it logs the team straight in. Print them, save as PDF, or send each card on WhatsApp.</span><button class="btn primary" data-act="view" data-v="cards">Open team cards</button></div>`:''}</section>`;
-  return `<section class="panel"><div class="spread"><div><span class="label">Live operations</span><h2>Control room</h2></div><button class="btn small" data-act="view" data-v="board">Open leaderboard</button></div>${sessbar}${boardbar}${live}</section>${join}${tracks}${countries}${teams}${settings}`;
+  return `<section class="panel"><div class="spread"><div><span class="label">Live operations</span><h2>Control room</h2></div><div class="row">${S.teams.length?'<button class="btn small" data-act="scorecsv">Download scores (CSV)</button>':''}<button class="btn small" data-act="view" data-v="board">Open leaderboard</button></div></div>${sessbar}${boardbar}${live}</section>${join}${tracks}${countries}${teams}${settings}`;
 }
 
 /* ================= actions ================= */
@@ -847,12 +918,17 @@ document.addEventListener('click',async e=>{
   if(a==='logout'){await api.signOut();return}
   if(a==='install'){if(installEvt){installEvt.prompt();try{const c=await installEvt.userChoice;if(c&&c.outcome==='accepted')lsSet('atw-installed','1')}catch(_){}installEvt=null;render(true)}else showInstallGuide();return}
   if(a==='guidedone'){lsSet('atw-installed','1');document.getElementById('guide').hidden=true;render(true);return}
+  if(a==='closefly'){const fl=document.getElementById('fly');fl.hidden=true;fl.innerHTML='';return}
   if(a==='closereveal'){document.getElementById('reveal').hidden=true;return}
   if(a==='guideclose'){document.getElementById('guide').hidden=true;return}
   if(a==='sample'){await loadSample();flash('good','Example countries and teams loaded.');render();return}
   if(a==='starter'){S.busy=true;flash('good','Loading starter pack…');render(true);try{await loadStarter();flash('good','Starter pack loaded: countries, 8 teams and tracks set. Uploaded audio was kept.')}catch(err){S.err='Starter pack could not be loaded: '+(err&&err.message||err)}S.busy=false;render(true);return}
   if(a==='autotrack'){const {routes,bad}=scheduleTracks();for(let k=0;k<S.teams.length;k++){await w(`teams/${S.teams[k].id}/route`,routes[k])}
     flash(bad?'bad':'good',bad?'Arranged as well as possible, but there are not enough game sets: add sets to remove the red cells.':'Tracks arranged: no country ever has more teams than game sets.');render(true);return}
+  if(a==='scorecsv'){const cfg=S.config;const head=['Rank','Team',...S.countries.map(c=>c.name),'Wrong answers','Hints','Bonus/penalty','Total'];
+    const rows=ranked().map(({t,p,score:sc},i)=>[i+1,t.name,...S.countries.map(c=>{const s=p.stamps.find(x=>x.countryId===c.id);return s?(+s.points||0):''}),p.wrong?`${p.wrong} (−${p.wrong*(+cfg.wrongPenalty||0)})`:0,p.hints.length?`${p.hints.length} (−${p.hints.length*(+cfg.hintCost||0)})`:0,p.adjust||0,sc]);
+    const csv=[head,...rows].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    const url=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'}));const l=document.createElement('a');l.href=url;l.download='ATW-scores.csv';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);return}
   if(a==='csv'){const head=['Team','PIN',...S.countries.map((_,i)=>'Stop '+(i+1))];const rows=S.teams.map(t=>[t.name,t.pin,...route(t).map(c=>c.name)]);
     const csv=[head,...rows].map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));const l=document.createElement('a');l.href=url;l.download='ATW-team-tracks.csv';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);return}
@@ -889,11 +965,15 @@ document.addEventListener('submit',async e=>{
   if(kind==='login'){try{await api.signIn(d.email.trim(),d.pw);S.flash=null;render()}catch(err){flash('bad','Email or password is wrong.');render(true)}return}
   if(kind==='join'){const t=S.teams.find(x=>x.id===S.pick);if(!t)return;
     if(String(d.pin).trim()===String(t.pin).trim()){S.myTeam=t.id;lsSet('atw-team',t.id);S.flash=null;render()}else{flash('bad','That PIN does not match. Ask your organiser.');render(true)}return}
+  if(kind==='scores'){const id=f.dataset.id;const p=prog(id);const n=v=>Math.round(+v||0);
+    p.stamps=p.stamps.map(s=>d['pts_'+s.countryId]!==undefined?{...s,points:n(d['pts_'+s.countryId])}:s);
+    p.wrong=Math.max(0,n(d.wrong));const h=Math.max(0,n(d.hints));p.hints=h<=p.hints.length?p.hints.slice(0,h):[...p.hints,...Array.from({length:h-p.hints.length},(_,i)=>'manual'+i)];
+    p.adjust=n(d.adjust);await saveProg(id,p);S.editing=null;flash('good','Scores saved. Leaderboard updated.');render(true);return}
   if(kind==='answer'&&!isLive())return;
   if(kind==='answer'){const t=S.teams.find(x=>x.id===S.myTeam);const p=prog(t.id),c=route(t)[p.step];if(!c||!d.ans.trim())return;
     const list=[c.name,...String(c.answers||'').split(',')].map(norm).filter(Boolean);
     const ok=list.includes(norm(d.ans));
-    if(ok){p.phase='travel';flash('good',`Correct. Your shipment is going to ${c.name}.`)}else{p.wrong=p.wrong+1;flash('bad',`Customs rejected "${d.ans.trim()}" (−${+S.config.wrongPenalty||0} pts). Look at the flyer again.`)}
+    if(ok){const from=fromPlace(t);p.phase='travel';flash('good',`Correct. Your shipment is going to ${c.name}.`);try{flyTo(from,c)}catch(_){}}else{p.wrong=p.wrong+1;flash('bad',`Customs rejected "${d.ans.trim()}" (−${+S.config.wrongPenalty||0} pts). Look at the flyer again.`)}
     render();try{await saveProg(t.id,p)}catch(_){}
     setTimeout(()=>{const el=document.getElementById('inline-flash');if(el)el.scrollIntoView({behavior:'smooth',block:'center'})},60);return}
   if(kind==='stamp'){const t=S.teams.find(x=>x.id===S.myTeam);const p=prog(t.id),c=route(t)[p.step];if(!c)return;
@@ -932,7 +1012,7 @@ document.addEventListener('submit',async e=>{
     S.busy=false;flash('good',`${N} teams created with PINs and tracks. Download the sheet (CSV) to print the PINs.`);render(true);return}
   if(kind==='allsets'){const k=Math.max(1,Math.min(9,+d.sets||1));for(const c of S.countries){await w(`countries/${c.id}/sets`,k)}
     flash('good',`All ${S.countries.length} countries set to ${k} game set${k>1?'s':''}. Press Auto-arrange to update the tracks.`);render(true);return}
-  if(kind==='config'){await w('config',{session:S.config.session||null,hideBoard:!!S.config.hideBoard,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim(),rewardMode:d.rewardMode==='words'?'words':'letters',clientName:(d.clientName||'').trim(),brandColor:(d.brandColor&&d.brandColor.toLowerCase()!=='#e4572e')?d.brandColor:'',clientLogoV:S.config.clientLogoV||null,wordsTitle:(d.wordsTitle||'').trim()||DEF.wordsTitle,finalMessage:(d.finalMessage||'').trim()||DEF.finalMessage});flash('good','Settings saved.');render(true);return}
+  if(kind==='config'){await w('config',{session:S.config.session||null,hideBoard:!!S.config.hideBoard,title:d.title.trim()||DEF.title,hintCost:Math.max(0,+d.hintCost||0),wrongPenalty:Math.max(0,+d.wrongPenalty||0),eqResult:d.eqResult.trim(),eqTop:d.eqTop.trim(),eqBottom:d.eqBottom.trim(),eqAfter:d.eqAfter.trim(),rewardMode:d.rewardMode==='words'?'words':'letters',clientName:(d.clientName||'').trim(),brandColor:(d.brandColor&&d.brandColor.toLowerCase()!=='#e4572e')?d.brandColor:'',clientLogoV:S.config.clientLogoV||null,wordsTitle:(d.wordsTitle||'').trim()||DEF.wordsTitle,finalMessage:(d.finalMessage||'').trim()||DEF.finalMessage,startFrom:(d.startFrom||'').trim()||DEF.startFrom});flash('good','Settings saved.');render(true);return}
   }catch(err){S.busy=false;S.busyMsg='';render(true)}
 });
 

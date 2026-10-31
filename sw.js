@@ -2,7 +2,7 @@
 // Code libraries, images and fonts: served from the phone's cache instantly, refreshed in the background.
 // index.html / config.js / starter pack: network first (max 3 s), so updates on GitHub show up; cache if offline.
 // Live game data (Firebase) is never cached.
-const CACHE='atw-v3';
+const CACHE='atw-v4';
 const SHELL=['./','index.html','config.js','manifest.webmanifest','lib/firebase-app.js','lib/firebase-database.js',
   'assets/atw-logo.png','assets/logic-logo.png','assets/landmarks.png','assets/map.jpg','icon-192.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).catch(()=>{}));self.skipWaiting()});
